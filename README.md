@@ -108,9 +108,3 @@ cp .env.example .env
 | 김석환 | |
 | 김재민 | |
 | 송민서 | |
-
-<br>
-
-## 📄 라이선스
-
-MIT License
