@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../models/match_user.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/home/match_card.dart';
+import '../../widgets/home/home_bottom_nav.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,40 +13,44 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  int _currentPage = 0;
+  late final PageController _pageController;
 
-  // 샘플 매칭 데이터
-  final List<Map<String, dynamic>> _matchList = [
-    {
-      'name': 'Sofia',
-      'country': '🇺🇸',
-      'major': '경영학과',
-      'year': '2학년',
-      'interests': ['여행', '카페 탐방', '영화'],
-      'description': '한국어 공부 중이에요!\n서로 함께 언어 교환해요 😊',
-      'matchPercent': 92,
-    },
-    {
-      'name': 'Liam',
-      'country': '🇬🇧',
-      'major': '컴퓨터공학과',
-      'year': '3학년',
-      'interests': ['게임', '음악', 'K-POP'],
-      'description': '한국 문화에 관심이 많아요!\n같이 공부도 하고 싶어요 📚',
-      'matchPercent': 87,
-    },
-    {
-      'name': 'Amara',
-      'country': '🇳🇬',
-      'major': '국제학부',
-      'year': '1학년',
-      'interests': ['요리', '운동', '사진'],
-      'description': '캠퍼스 생활 도움이 필요해요!\n친하게 지내고 싶어요 😄',
-      'matchPercent': 81,
-    },
+  final List<MatchUser> _matchList = const [
+    MatchUser(
+      name: 'Sofia',
+      country: '🇺🇸',
+      major: '경영학과',
+      year: '2학년',
+      interests: ['여행', '카페 탐방', '영화'],
+      description: '한국어 공부 중이에요!\n서로 함께 언어 교환해요 😊',
+      matchPercent: 92,
+    ),
+    MatchUser(
+      name: 'Liam',
+      country: '🇬🇧',
+      major: '컴퓨터공학과',
+      year: '3학년',
+      interests: ['게임', '음악', 'K-POP'],
+      description: '한국 문화에 관심이 많아요!\n같이 공부도 하고 싶어요 📚',
+      matchPercent: 87,
+    ),
+    MatchUser(
+      name: 'Amara',
+      country: '🇳🇬',
+      major: '국제학부',
+      year: '1학년',
+      interests: ['요리', '운동', '사진'],
+      description: '캠퍼스 생활 도움이 필요해요!\n친하게 지내고 싶어요 😄',
+      matchPercent: 81,
+    ),
   ];
 
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.68);
+  }
 
   @override
   void dispose() {
@@ -56,10 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: _buildBody(),
+      body: SafeArea(child: _buildBody()),
+      bottomNavigationBar: HomeBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -70,9 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return const Center(child: Text('매칭'));
       case 2:
-        return const Center(child: Text('도움'));
-      case 3:
         return const Center(child: Text('채팅'));
+      case 3:
+        return const Center(child: Text('도움'));
       case 4:
         return const Center(child: Text('마이'));
       default:
@@ -81,15 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeTab() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 20),
-
-          // 상단 인사
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 상단 인사
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Column(
@@ -123,102 +128,89 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+        ),
+        const SizedBox(height: 20),
 
-          // 매칭 카드 PageView
-          Expanded(
-            child: Column(
-              children: [
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _matchList.length,
-                    onPageChanged: (index) {
-                      setState(() => _currentPage = index);
-                    },
-                    itemBuilder: (context, index) {
-                      final match = _matchList[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        child: MatchCard(
-                          name: match['name'],
-                          country: match['country'],
-                          major: match['major'],
-                          year: match['year'],
-                          interests: List<String>.from(match['interests']),
-                          description: match['description'],
-                          matchPercent: match['matchPercent'],
-                        ),
-                      );
-                    },
-                  ),
+        // Today's Bridge 레이블
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 0, 14),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(height: 16),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                "Today's Bridge",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
 
-                // 페이지 인디케이터
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _matchList.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: _currentPage == index ? 16 : 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index
-                            ? AppTheme.primary
-                            : const Color(0xFFD0DCEF),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
+        // 카드 PageView
+        SizedBox(
+          height: MediaQuery.of(context).size.height * 0.52,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: _matchList.length,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            itemBuilder: (context, index) {
+              final user = _matchList[index];
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double scale = 1.0;
+                  if (_pageController.hasClients &&
+                      _pageController.page != null) {
+                    final diff = (_pageController.page! - index).abs();
+                    scale = (1.0 - diff * 0.05).clamp(0.95, 1.0);
+                  }
+                  return Transform.scale(scale: scale, child: child);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
                   ),
+                  child: MatchCard(user: user),
                 ),
-                const SizedBox(height: 20),
-              ],
+              );
+            },
+          ),
+        ),
+
+        // 페이지 인디케이터 (작은 원 3개)
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 22),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _matchList.length,
+              (index) => AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: _currentPage == index ? 9 : 7,
+                height: _currentPage == index ? 9 : 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentPage == index
+                      ? AppTheme.primary
+                      : const Color(0xFFD0DCEF),
+                ),
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: _currentIndex,
-      onTap: (index) => setState(() => _currentIndex = index),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: AppTheme.primary,
-      unselectedItemColor: const Color(0xFFAAAAAA),
-      selectedFontSize: 11,
-      unselectedFontSize: 11,
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: '홈',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.extension_outlined),  // 퍼즐 아이콘
-          activeIcon: Icon(Icons.extension),
-          label: '매칭',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.volunteer_activism_outlined),
-          activeIcon: Icon(Icons.volunteer_activism),
-          label: '도움',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          activeIcon: Icon(Icons.chat_bubble),
-          label: '채팅',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: '마이',
         ),
       ],
     );
