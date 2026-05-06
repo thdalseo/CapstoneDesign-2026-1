@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/knu_data.dart';
+import '../../widgets/auth/dropdown_field.dart';
 import 'email_verify_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -121,41 +122,58 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // 단과대
               _label('단과대'),
-              _buildDropdown(
+              SelectorButton(
                 hint: '단과대를 선택해주세요',
                 value: _selectedCollege,
-                items: knuDepartments.keys.toList(),
-                onChanged: (val) {
-                  setState(() {
-                    _selectedCollege = val;
-                    _selectedDept = null; // 학부 초기화
-                  });
+                onTap: () async {
+                  final result = await showModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => SimplePickerSheet(
+                      title: '단과대',
+                      items: knuDepartments.keys.toList(),
+                      selectedItem: _selectedCollege,
+                    ),
+                  );
+                  if (result != null) {
+                    setState(() {
+                      _selectedCollege = result;
+                      _selectedDept = null;
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 20),
 
               // 학부
               _label('학부/학과'),
-              _buildDropdown(
+              SelectorButton(
                 hint: _selectedCollege == null
                     ? '단과대를 먼저 선택해주세요'
                     : '학부/학과를 선택해주세요',
                 value: _selectedDept,
-                items: _deptList,
-                onChanged: _selectedCollege == null
+                onTap: _selectedCollege == null
                     ? null
-                    : (val) => setState(() => _selectedDept = val),
+                    : () async {
+                        final result = await showModalBottomSheet<String>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SimplePickerSheet(
+                            title: '학부/학과',
+                            items: _deptList,
+                            selectedItem: _selectedDept,
+                          ),
+                        );
+                        if (result != null) setState(() => _selectedDept = result);
+                      },
               ),
               const SizedBox(height: 20),
 
               // 국가
               _label('국가'),
-              _buildDropdown(
-                hint: '국가를 선택해주세요',
-                value: _selectedCountry,
-                items: countries,
-                onChanged: (val) => setState(() => _selectedCountry = val),
-              ),
+              _buildCountrySelector(),
               const SizedBox(height: 20),
 
               // 학교 이메일
@@ -165,24 +183,13 @@ class _SignupScreenState extends State<SignupScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _emailPrefixController,
-                      decoration: const InputDecoration(
-                        hintText: '학번 입력',
-                      ),
                       validator: (v) =>
-                          v == null || v.isEmpty ? '학번을 입력해주세요' : null,
+                          v == null || v.isEmpty ? '이메일을 입력해주세요' : null,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4F8),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFDDE4EE)),
-                    ),
-                    child: const Text(
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
                       '@kangwon.ac.kr',
                       style: TextStyle(
                         fontSize: 14,
@@ -233,45 +240,19 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String hint,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?>? onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFDDE4EE)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: value,
-          hint: Text(
-            hint,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFFBBBBBB),
-            ),
-          ),
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(
-                item,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
+  Widget _buildCountrySelector() {
+    return SelectorButton(
+      hint: '국가를 선택해주세요',
+      value: _selectedCountry,
+      onTap: () async {
+        final result = await showModalBottomSheet<String>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => CountryPickerSheet(selectedCountry: _selectedCountry),
+        );
+        if (result != null) setState(() => _selectedCountry = result);
+      },
     );
   }
 }
