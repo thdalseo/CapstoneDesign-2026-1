@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'screens/onboarding/onboarding_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'theme/app_theme.dart';
 
 class BridgeApp extends StatelessWidget {
-  const BridgeApp({super.key});
+  final bool isLoggedIn;
+
+  const BridgeApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +14,7 @@ class BridgeApp extends StatelessWidget {
       title: 'Bridge',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const OnboardingScreen(),
+      home: isLoggedIn ? const HomeScreen() : const OnboardingScreen(),
     );
   }
 }
