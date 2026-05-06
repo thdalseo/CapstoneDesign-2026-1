@@ -4,8 +4,17 @@ import '../../theme/app_theme.dart';
 
 class MatchCard extends StatefulWidget {
   final MatchUser user;
+  final bool isMatched;
+  final VoidCallback? onMatchTap;
+  final VoidCallback? onChatTap;
 
-  const MatchCard({super.key, required this.user});
+  const MatchCard({
+    super.key,
+    required this.user,
+    this.isMatched = false,
+    this.onMatchTap,
+    this.onChatTap,
+  });
 
   @override
   State<MatchCard> createState() => _MatchCardState();
@@ -13,6 +22,7 @@ class MatchCard extends StatefulWidget {
 
 class _MatchCardState extends State<MatchCard> {
   bool _puzzleHovered = false;
+  bool _chatHovered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -20,19 +30,7 @@ class _MatchCardState extends State<MatchCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.18),
-            blurRadius: 24,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
-          ),
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppTheme.border, width: 1.2),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -54,23 +52,17 @@ class _MatchCardState extends State<MatchCard> {
                     child: Row(
                       children: [
                         // 프로필 이미지 (고정 크기)
-                        SizedBox(
+                        Container(
                           width: 68,
                           height: 68,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              color: const Color(0xFFE8F0FE),
-                              border: Border.all(
-                                color: const Color(0xFFD0DCEF),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFB0C4DE),
-                              size: 36,
-                            ),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFFE8F0FE),
+                          ),
+                          child: const Icon(
+                            Icons.person_rounded,
+                            color: AppTheme.primary,
+                            size: 34,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -148,9 +140,6 @@ class _MatchCardState extends State<MatchCard> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF0F4F8),
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(
-                                  color: const Color(0xFFDDE4EE),
-                                ),
                               ),
                               child: Text(
                                 tag,
@@ -175,7 +164,7 @@ class _MatchCardState extends State<MatchCard> {
                         ),
                         const Spacer(),
 
-                        // 매칭도 + 퍼즐 버튼
+                        // 매칭도 + 버튼들
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -197,49 +186,100 @@ class _MatchCardState extends State<MatchCard> {
                                 ),
                               ],
                             ),
-                            MouseRegion(
-                              onEnter: (_) =>
-                                  setState(() => _puzzleHovered = true),
-                              onExit: (_) =>
-                                  setState(() => _puzzleHovered = false),
-                              child: GestureDetector(
-                                onTap: () {},
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 180),
-                                  width: 46,
-                                  height: 46,
-                                  decoration: BoxDecoration(
-                                    color: _puzzleHovered
-                                        ? AppTheme.primary
-                                        : const Color(0xFFF0F4F8),
-                                    borderRadius: BorderRadius.circular(13),
-                                    border: Border.all(
-                                      color: _puzzleHovered
-                                          ? AppTheme.primary
-                                          : const Color(0xFFDDE4EE),
+                            Row(
+                              children: [
+                                // 채팅 버튼
+                                if (widget.onChatTap != null)
+                                  MouseRegion(
+                                    onEnter: (_) =>
+                                        setState(() => _chatHovered = true),
+                                    onExit: (_) =>
+                                        setState(() => _chatHovered = false),
+                                    child: GestureDetector(
+                                      onTap: widget.onChatTap,
+                                      child: AnimatedContainer(
+                                        duration:
+                                            const Duration(milliseconds: 180),
+                                        width: 46,
+                                        height: 46,
+                                        decoration: BoxDecoration(
+                                          color: _chatHovered
+                                              ? AppTheme.primary
+                                              : const Color(0xFFF0F4F8),
+                                          borderRadius:
+                                              BorderRadius.circular(13),
+                                          boxShadow: _chatHovered
+                                              ? [
+                                                  BoxShadow(
+                                                    color: AppTheme.primary
+                                                        .withValues(alpha: 0.30),
+                                                    blurRadius: 10,
+                                                    offset: const Offset(0, 4),
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Icon(
+                                          _chatHovered
+                                              ? Icons.chat_bubble_rounded
+                                              : Icons.chat_bubble_outline_rounded,
+                                          size: 22,
+                                          color: _chatHovered
+                                              ? Colors.white
+                                              : AppTheme.textSecondary,
+                                        ),
+                                      ),
                                     ),
-                                    boxShadow: _puzzleHovered
-                                        ? [
-                                            BoxShadow(
-                                              color: AppTheme.primary
-                                                  .withValues(alpha: 0.30),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
                                   ),
-                                  child: Icon(
-                                    _puzzleHovered
-                                        ? Icons.extension
-                                        : Icons.extension_outlined,
-                                    size: 22,
-                                    color: _puzzleHovered
-                                        ? Colors.white
-                                        : AppTheme.textSecondary,
+                                if (widget.onChatTap != null)
+                                  const SizedBox(width: 8),
+                                // 퍼즐(매칭) 버튼
+                                MouseRegion(
+                                  onEnter: (_) =>
+                                      setState(() => _puzzleHovered = true),
+                                  onExit: (_) =>
+                                      setState(() => _puzzleHovered = false),
+                                  child: GestureDetector(
+                                    onTap: widget.onMatchTap,
+                                    child: AnimatedContainer(
+                                      duration:
+                                          const Duration(milliseconds: 180),
+                                      width: 46,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        color: _puzzleHovered
+                                            ? AppTheme.primary
+                                            : widget.isMatched
+                                                ? AppTheme.primary
+                                                    .withValues(alpha: 0.12)
+                                                : const Color(0xFFF0F4F8),
+                                        borderRadius: BorderRadius.circular(13),
+                                        boxShadow: _puzzleHovered
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppTheme.primary
+                                                      .withValues(alpha: 0.30),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: Icon(
+                                        widget.isMatched || _puzzleHovered
+                                            ? Icons.extension
+                                            : Icons.extension_outlined,
+                                        size: 22,
+                                        color: _puzzleHovered
+                                            ? Colors.white
+                                            : widget.isMatched
+                                                ? AppTheme.primary
+                                                : AppTheme.textSecondary,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
                           ],
                         ),

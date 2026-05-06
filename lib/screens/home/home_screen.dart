@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../screens/matching/matching_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
+import '../../widgets/home/my_profile_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,6 +19,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   int _currentPage = 0;
   late final PageController _pageController;
+  UserModel? _currentUser;
+  final List<MatchUser> _matchedUsers = [];
 
   final List<MatchUser> _matchList = const [
     MatchUser(
@@ -50,6 +56,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.68);
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await UserService.loadUser();
+    if (mounted) setState(() => _currentUser = user);
+  }
+
+  void _toggleMatched(MatchUser user) {
+    setState(() {
+      final idx = _matchedUsers.indexWhere((u) => u.name == user.name);
+      if (idx == -1) {
+        _matchedUsers.add(user);
+      } else {
+        _matchedUsers.removeAt(idx);
+      }
+    });
   }
 
   @override
@@ -75,7 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return _buildHomeTab();
       case 1:
-        return const Center(child: Text('매칭'));
+        return MatchingScreen(
+          users: _matchedUsers,
+          onToggle: _toggleMatched,
+        );
       case 2:
         return const Center(child: Text('채팅'));
       case 3:
@@ -93,15 +119,15 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         // 상단 인사
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+          padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '안녕하세요, 민서님! 👋',
+                    '안녕하세요, ${_currentUser?.name ?? ''}님! 👋',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -129,38 +155,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
 
-        // Today's Bridge 레이블
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 0, 14),
-          child: Row(
-            children: [
-              Container(
-                width: 3,
-                height: 16,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                "Today's Bridge",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // 내 프로필 카드
+        MyProfileCard(user: _currentUser),
+        const SizedBox(height: 14),
 
-        // 카드 PageView
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.52,
+        // 카드 PageView — 남은 공간을 모두 채움
+        Expanded(
           child: PageView.builder(
             controller: _pageController,
             itemCount: _matchList.length,
@@ -181,9 +183,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 10,
+                    vertical: 8,
                   ),
-                  child: MatchCard(user: user),
+                  child: MatchCard(
+                    user: user,
+                    isMatched: _matchedUsers.any((u) => u.name == user.name),
+                    onMatchTap: () => _toggleMatched(user),
+                  ),
                 ),
               );
             },
@@ -192,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // 페이지 인디케이터 (작은 원 3개)
         Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 22),
+          padding: const EdgeInsets.only(top: 6, bottom: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
