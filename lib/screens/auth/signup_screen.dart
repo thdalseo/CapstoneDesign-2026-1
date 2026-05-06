@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/knu_data.dart';
 import '../../widgets/auth/dropdown_field.dart';
@@ -48,7 +50,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: 백엔드 API 연동
+    // 로컬에 프로필 저장 (백엔드 연동 전까지 SharedPreferences 사용)
+    await UserService.saveUser(
+      UserModel(
+        name: _nameController.text.trim(),
+        country: _selectedCountry!,
+        college: _selectedCollege!,
+        major: _selectedDept!,
+        email: '${_emailPrefixController.text.trim()}@kangwon.ac.kr',
+      ),
+    );
+
+    // TODO: 백엔드 API 연동 시 아래 코드로 교체
     // final response = await AuthService.signup(
     //   name: _nameController.text,
     //   email: '${_emailPrefixController.text}@kangwon.ac.kr',
@@ -56,8 +69,10 @@ class _SignupScreenState extends State<SignupScreen> {
     //   department: _selectedDept!,
     //   country: _selectedCountry!,
     // );
+    // final user = UserModel.fromJson(response);
+    // await UserService.saveUser(user);
 
-    await Future.delayed(const Duration(seconds: 1)); // 임시
+    await Future.delayed(const Duration(seconds: 1)); // 임시 딜레이
 
     setState(() => _isLoading = false);
 
