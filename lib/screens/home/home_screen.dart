@@ -5,6 +5,8 @@ import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../screens/matching/matching_screen.dart';
 import '../../screens/chatting/chatting_screen.dart';
+import '../../screens/mypage/mypage_screen.dart';
+import '../../screens/mypage/edit_profile_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
 import '../../widgets/home/my_profile_card.dart';
@@ -108,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return const Center(child: Text('도움'));
       case 4:
-        return const Center(child: Text('마이'));
+        return const MyPageScreen();
       default:
         return _buildHomeTab();
     }
@@ -159,7 +161,13 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 12),
 
         // 내 프로필 카드
-        MyProfileCard(user: _currentUser),
+        MyProfileCard(
+          user: _currentUser,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+          ),
+        ),
         const SizedBox(height: 14),
 
         // 카드 PageView — 남은 공간을 모두 채움
