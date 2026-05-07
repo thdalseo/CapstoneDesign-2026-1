@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
+import '../../screens/chatting/chatting_room_screen.dart';
 import '../../theme/app_theme.dart';
 import '../home/match_card.dart';
 
@@ -125,7 +126,12 @@ class MatchedUserTile extends StatelessWidget {
                 },
                 onChatTap: () {
                   Navigator.pop(context);
-                  // TODO: 채팅 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ChattingRoomScreen(user: user),
+                    ),
+                  );
                 },
               ),
             ),
