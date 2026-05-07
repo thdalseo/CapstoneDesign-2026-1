@@ -4,6 +4,7 @@ import '../../models/user_model.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../screens/matching/matching_screen.dart';
+import '../../screens/chatting/chatting_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
 import '../../widgets/home/my_profile_card.dart';
@@ -103,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onToggle: _toggleMatched,
         );
       case 2:
-        return const Center(child: Text('채팅'));
+        return ChattingScreen(users: _matchedUsers);
       case 3:
         return const Center(child: Text('도움'));
       case 4:

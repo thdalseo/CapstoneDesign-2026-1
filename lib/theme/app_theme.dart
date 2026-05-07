@@ -15,7 +15,7 @@ class AppTheme {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: primary,
-          background: background,
+          surface: background,
         ),
         scaffoldBackgroundColor: background,
         fontFamily: 'Pretendard',
