@@ -4,8 +4,9 @@ import '../../theme/app_theme.dart';
 
 class MyProfileCard extends StatelessWidget {
   final UserModel? user;
+  final VoidCallback? onTap;
 
-  const MyProfileCard({super.key, required this.user});
+  const MyProfileCard({super.key, required this.user, this.onTap});
 
   static const _dummy = UserModel(
     name: '송민서',
@@ -22,7 +23,9 @@ class MyProfileCard extends StatelessWidget {
     final u = user ?? _dummy;
     final subtitle = [u.major, if (u.year.isNotEmpty) u.year].join(' · ');
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -128,6 +131,7 @@ class MyProfileCard extends StatelessWidget {
             size: 20,
           ),
         ],
+      ),
       ),
     );
   }
