@@ -6,6 +6,7 @@ class UserModel {
   final String major;       // 학부/학과
   final String year;        // e.g. "3학년"
   final List<String> interests;
+  final List<String> exchangePurposes;
   final String description;
   final String email;
   final String? avatarUrl;
@@ -18,6 +19,7 @@ class UserModel {
     required this.major,
     this.year = '',
     this.interests = const [],
+    this.exchangePurposes = const [],
     this.description = '',
     required this.email,
     this.avatarUrl,
@@ -34,6 +36,7 @@ class UserModel {
         'major': major,
         'year': year,
         'interests': interests,
+        'exchangePurposes': exchangePurposes,
         'description': description,
         'email': email,
         'avatarUrl': avatarUrl,
@@ -50,6 +53,10 @@ class UserModel {
                 ?.map((e) => e as String)
                 .toList() ??
             [],
+        exchangePurposes: (json['exchangePurposes'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
         description: json['description'] as String? ?? '',
         email: json['email'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String?,
@@ -63,6 +70,7 @@ class UserModel {
     String? major,
     String? year,
     List<String>? interests,
+    List<String>? exchangePurposes,
     String? description,
     String? email,
     String? avatarUrl,
@@ -75,6 +83,7 @@ class UserModel {
         major: major ?? this.major,
         year: year ?? this.year,
         interests: interests ?? this.interests,
+        exchangePurposes: exchangePurposes ?? this.exchangePurposes,
         description: description ?? this.description,
         email: email ?? this.email,
         avatarUrl: avatarUrl ?? this.avatarUrl,

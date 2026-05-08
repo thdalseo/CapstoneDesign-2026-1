@@ -7,6 +7,8 @@ import '../../screens/matching/matching_screen.dart';
 import '../../screens/chatting/chatting_screen.dart';
 import '../../screens/mypage/mypage_screen.dart';
 import '../../screens/mypage/edit_profile_screen.dart';
+import '../../screens/helping/helping_screen.dart';
+import '../../screens/chatting/chatting_room_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
 import '../../widgets/home/my_profile_card.dart';
@@ -108,7 +110,22 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return ChattingScreen(users: _matchedUsers);
       case 3:
-        return const Center(child: Text('도움'));
+        return HelpingScreen(
+          onStartChat: (user, systemMessage) {
+            if (!_matchedUsers.any((u) => u.name == user.name)) {
+              setState(() => _matchedUsers.add(user));
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ChattingRoomScreen(
+                  user: user,
+                  initialMessage: systemMessage,
+                ),
+              ),
+            );
+          },
+        );
       case 4:
         return const MyPageScreen();
       default:

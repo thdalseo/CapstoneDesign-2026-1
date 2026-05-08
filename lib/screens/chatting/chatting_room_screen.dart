@@ -10,8 +10,13 @@ import '../../widgets/chatting/chat_input_bar.dart';
 
 class ChattingRoomScreen extends StatefulWidget {
   final MatchUser user;
+  final String? initialMessage;
 
-  const ChattingRoomScreen({super.key, required this.user});
+  const ChattingRoomScreen({
+    super.key,
+    required this.user,
+    this.initialMessage,
+  });
 
   @override
   State<ChattingRoomScreen> createState() => _ChattingRoomScreenState();
@@ -26,6 +31,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   StreamSubscription<ChatMessage>? _messageSub;
   ChatConnectionState _connState = ChatConnectionState.disconnected;
   bool _loadingHistory = true;
+  bool _showSuggestions = true;
 
   @override
   void initState() {
@@ -58,6 +64,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     }
 
     await _service.connect(widget.user.name);
+
+    if (widget.initialMessage != null && mounted) {
+      _service.send(widget.initialMessage!);
+      _scrollToBottom();
+    }
   }
 
   @override
@@ -74,8 +85,116 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
+    if (_showSuggestions) setState(() => _showSuggestions = false);
     _service.send(text);
     _scrollToBottom();
+  }
+
+  void _sendSuggestion(String text) {
+    setState(() => _showSuggestions = false);
+    _service.send(text);
+    _scrollToBottom();
+  }
+
+  static const List<String> _suggestions = [
+    '안녕하세요! 만나서 반가워요 😊',
+    '어떤 언어를 배우고 싶으세요?',
+    '한국에서 가장 좋아하는 음식이 뭐예요?',
+    '주말에 보통 뭐 하세요?',
+    '관심사가 뭐예요?',
+    '학교 생활은 어때요?',
+  ];
+
+  Widget _buildEmptyWithSuggestions() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFFE8F0FE),
+            ),
+            child: const Icon(
+              Icons.waving_hand_rounded,
+              color: AppTheme.primary,
+              size: 26,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${widget.user.name}님과 대화를 시작해보세요!',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            '아래 추천 문구를 눌러보세요',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestionChips() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              '💬 아이스브레이킹 추천 문구',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _suggestions.map((text) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => _sendSuggestion(text),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4FF),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.25)),
+                      ),
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -160,15 +279,18 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                       strokeWidth: 2,
                     ),
                   )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, i) =>
-                        ChatBubble(message: _messages[i]),
-                  ),
+                : _messages.isEmpty
+                    ? _buildEmptyWithSuggestions()
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, i) =>
+                            ChatBubble(message: _messages[i]),
+                      ),
           ),
+          if (!_loadingHistory && _showSuggestions) _buildSuggestionChips(),
           ChatInputBar(
             controller: _controller,
             onSend: _sendMessage,

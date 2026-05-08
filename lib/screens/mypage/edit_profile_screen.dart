@@ -22,6 +22,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   List<String> _selectedInterests = ['여행', '영화'];
   List<String> _selectedPersonalities = ['친화적'];
   List<String> _selectedLanguages = ['한국어'];
+  List<String> _selectedPurposes = [];
 
   List<String> _customInterests = [];
   final List<String> _customPersonalities = [];
@@ -97,6 +98,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   borderSide: const BorderSide(color: AppTheme.primary),
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+
+            _sectionTitle('교류 목적', hint: '중복 선택 가능'),
+            const SizedBox(height: 10),
+            GridChips(
+              items: exchangePurposeList,
+              selected: _selectedPurposes,
+              onTap: (item) => _toggle(_selectedPurposes, item),
             ),
             const SizedBox(height: 24),
 

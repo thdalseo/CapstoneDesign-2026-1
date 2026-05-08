@@ -45,6 +45,19 @@ class MyPageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             MyPageSection(
+              title: '앱 설정',
+              items: [
+                MyPageMenuItem(
+                  icon: Icons.language_outlined,
+                  label: '언어 변경',
+                  onTap: () {
+                    // TODO: 언어 변경 기능 구현
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            MyPageSection(
               title: '계정',
               items: [
                 MyPageMenuItem(

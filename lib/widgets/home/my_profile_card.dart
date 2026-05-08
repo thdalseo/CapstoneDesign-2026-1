@@ -9,9 +9,9 @@ class MyProfileCard extends StatelessWidget {
   const MyProfileCard({super.key, required this.user, this.onTap});
 
   static const _dummy = UserModel(
-    name: '송민서',
+    name: '홍길동',
     country: '🇰🇷 대한민국',
-    college: '',
+    college: '공과대학',
     major: '컴퓨터공학과',
     year: '4학년',
     interests: ['여행', '카페탐방', '영화'],

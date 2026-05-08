@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import '../../models/chat_message.dart';
 import '../../theme/app_theme.dart';
 
-class ChatBubble extends StatelessWidget {
+class ChatBubble extends StatefulWidget {
   final ChatMessage message;
 
   const ChatBubble({super.key, required this.message});
 
   @override
+  State<ChatBubble> createState() => _ChatBubbleState();
+}
+
+class _ChatBubbleState extends State<ChatBubble> {
+  bool _showTranslation = false;
+
+  @override
   Widget build(BuildContext context) {
-    final isMe = message.isMe;
-    final time = _formatTime(message.timestamp);
+    final isMe = widget.message.isMe;
+    final time = _formatTime(widget.message.timestamp);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -20,19 +27,52 @@ class ChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: isMe
             ? [
-                // 내 메시지: 시간 → 말풍선
                 _timeText(time),
                 const SizedBox(width: 6),
                 _bubble(context, isMe),
               ]
             : [
-                // 상대 메시지: 아바타 → 말풍선 → 시간
                 _avatar(),
                 const SizedBox(width: 8),
-                _bubble(context, isMe),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _bubble(context, isMe),
+                    const SizedBox(height: 4),
+                    _translateButton(),
+                  ],
+                ),
                 const SizedBox(width: 6),
                 _timeText(time),
               ],
+      ),
+    );
+  }
+
+  Widget _translateButton() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _showTranslation = !_showTranslation);
+        // TODO: 번역 API 연동
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.translate_rounded,
+            size: 12,
+            color: _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            _showTranslation ? '번역 닫기' : '번역보기',
+            style: TextStyle(
+              fontSize: 11,
+              color: _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -76,7 +116,7 @@ class ChatBubble extends StatelessWidget {
             ],
           ),
           child: Text(
-            message.content,
+            widget.message.content,
             style: TextStyle(
               fontSize: 14,
               color: isMe ? Colors.white : AppTheme.textPrimary,
