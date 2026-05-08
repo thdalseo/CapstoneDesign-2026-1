@@ -1,4 +1,5 @@
 class MatchUser {
+  final String id;
   final String name;
   final String country;
   final String major;
@@ -8,6 +9,7 @@ class MatchUser {
   final int matchPercent;
 
   const MatchUser({
+    this.id = '',
     required this.name,
     required this.country,
     required this.major,

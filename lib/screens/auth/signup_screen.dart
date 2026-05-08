@@ -17,10 +17,14 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailPrefixController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  String? _selectedCollege;    // 단과대
-  String? _selectedDept;       // 학부
-  String? _selectedCountry;    // 국가
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
+  String? _selectedCollege;
+  String? _selectedDept;
+  String? _selectedCountry;
   bool _isLoading = false;
 
   List<String> get _deptList =>
@@ -30,6 +34,8 @@ class _SignupScreenState extends State<SignupScreen> {
   void dispose() {
     _nameController.dispose();
     _emailPrefixController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -50,6 +56,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isLoading = true);
 
+    final email = '${_emailPrefixController.text.trim()}@kangwon.ac.kr';
+
     // 로컬에 프로필 저장 (백엔드 연동 전까지 SharedPreferences 사용)
     await UserService.saveUser(
       UserModel(
@@ -57,22 +65,10 @@ class _SignupScreenState extends State<SignupScreen> {
         country: _selectedCountry!,
         college: _selectedCollege!,
         major: _selectedDept!,
-        email: '${_emailPrefixController.text.trim()}@kangwon.ac.kr',
+        email: email,
       ),
     );
-
-    // TODO: 백엔드 API 연동 시 아래 코드로 교체
-    // final response = await AuthService.signup(
-    //   name: _nameController.text,
-    //   email: '${_emailPrefixController.text}@kangwon.ac.kr',
-    //   college: _selectedCollege!,
-    //   department: _selectedDept!,
-    //   country: _selectedCountry!,
-    // );
-    // final user = UserModel.fromJson(response);
-    // await UserService.saveUser(user);
-
-    await Future.delayed(const Duration(seconds: 1)); // 임시 딜레이
+    await UserService.saveCredentials(email, _passwordController.text);
 
     setState(() => _isLoading = false);
 
@@ -80,9 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EmailVerifyScreen(
-          email: '${_emailPrefixController.text}@kangwon.ac.kr',
-        ),
+        builder: (_) => EmailVerifyScreen(email: email),
       ),
     );
   }
@@ -198,6 +192,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _emailPrefixController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(hintText: '이메일 아이디'),
                       validator: (v) =>
                           v == null || v.isEmpty ? '이메일을 입력해주세요' : null,
                     ),
@@ -213,6 +209,54 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // 비밀번호
+              _label('비밀번호'),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: !_passwordVisible,
+                decoration: InputDecoration(
+                  hintText: '8자 이상 입력해주세요',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+                  ),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return '비밀번호를 입력해주세요';
+                  if (v.length < 8) return '비밀번호는 8자 이상이어야 해요';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+
+              // 비밀번호 확인
+              _label('비밀번호 확인'),
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: !_confirmPasswordVisible,
+                decoration: InputDecoration(
+                  hintText: '비밀번호를 한 번 더 입력해주세요',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _confirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                  ),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return '비밀번호 확인을 입력해주세요';
+                  if (v != _passwordController.text) return '비밀번호가 일치하지 않아요';
+                  return null;
+                },
               ),
               const SizedBox(height: 40),
 

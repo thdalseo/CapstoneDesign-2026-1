@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mypage/mypage_profile_card.dart';
 import '../../widgets/mypage/mypage_section.dart';
 import '../../widgets/mypage/mypage_menu_item.dart';
+import '../onboarding/onboarding_screen.dart';
 import 'edit_profile_screen.dart';
 
-class MyPageScreen extends StatelessWidget {
+class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
+
+  @override
+  State<MyPageScreen> createState() => _MyPageScreenState();
+}
+
+class _MyPageScreenState extends State<MyPageScreen> {
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await UserService.loadUser();
+    if (mounted) setState(() => _user = user);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +49,7 @@ class MyPageScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const MyPageProfileCard(),
+            MyPageProfileCard(user: _user),
             const SizedBox(height: 12),
             MyPageSection(
               title: '프로필 설정',
@@ -36,10 +57,15 @@ class MyPageScreen extends StatelessWidget {
                 MyPageMenuItem(
                   icon: Icons.edit_outlined,
                   label: '프로필 편집',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                  ),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EditProfileScreen(user: _user),
+                      ),
+                    );
+                    _loadUser();
+                  },
                 ),
               ],
             ),
@@ -96,9 +122,15 @@ class MyPageScreen extends StatelessWidget {
             child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: 로그아웃 처리
+              await UserService.clearUser();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                (_) => false,
+              );
             },
             child: const Text('로그아웃', style: TextStyle(color: AppTheme.primary)),
           ),
@@ -126,9 +158,15 @@ class MyPageScreen extends StatelessWidget {
             child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: 회원탈퇴 처리
+              await UserService.clearUser();
+              if (!mounted) return;
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                (_) => false,
+              );
             },
             child: Text('탈퇴하기', style: TextStyle(color: Colors.red.shade400)),
           ),

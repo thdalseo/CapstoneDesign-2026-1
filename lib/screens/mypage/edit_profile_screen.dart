@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/profile_data.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../widgets/mypage/profile_image_picker.dart';
 import '../../widgets/mypage/grid_chips.dart';
 import '../../widgets/mypage/custom_chip_input.dart';
 import '../../widgets/mypage/hover_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  final UserModel? user;
+  const EditProfileScreen({super.key, this.user});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -19,14 +23,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _customPersonalityController = TextEditingController();
   final _customLanguageController = TextEditingController();
 
-  List<String> _selectedInterests = ['여행', '영화'];
-  List<String> _selectedPersonalities = ['친화적'];
+  String _pickedImagePath = '';
+  String _selectedYear = '';
+  List<String> _selectedInterests = [];
+  List<String> _selectedPersonalities = [];
   List<String> _selectedLanguages = ['한국어'];
   List<String> _selectedPurposes = [];
 
-  List<String> _customInterests = [];
+  final List<String> _customInterests = [];
   final List<String> _customPersonalities = [];
   final List<String> _customLanguages = [];
+
+  static const _yearOptions = ['1학년', '2학년', '3학년', '4학년'];
+
+  @override
+  void initState() {
+    super.initState();
+    final u = widget.user;
+    if (u != null) {
+      _introController.text = u.description;
+      _selectedYear = u.year;
+      _selectedInterests = List.of(u.interests);
+      _selectedPurposes = List.of(u.exchangePurposes);
+      _selectedPersonalities = List.of(u.personalities);
+      _selectedLanguages = u.languages.isNotEmpty ? List.of(u.languages) : ['한국어'];
+      if (u.avatarUrl != null && !u.avatarUrl!.startsWith('http')) {
+        _pickedImagePath = u.avatarUrl!;
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -72,8 +97,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ProfileImagePicker(onTap: _pickImage),
+            ProfileImagePicker(
+              onTap: _pickImage,
+              imagePath: _pickedImagePath.isNotEmpty ? _pickedImagePath : null,
+            ),
             const SizedBox(height: 28),
+
+            _sectionTitle('학년'),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedYear.isEmpty ? null : _selectedYear,
+              hint: const Text('학년 선택', style: TextStyle(fontSize: 13, color: Color(0xFFAAB4C0))),
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.primary),
+                ),
+              ),
+              items: _yearOptions
+                  .map((y) => DropdownMenuItem(value: y, child: Text(y)))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedYear = v ?? ''),
+            ),
+            const SizedBox(height: 24),
 
             _sectionTitle('자기소개'),
             const SizedBox(height: 10),
@@ -227,9 +282,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
-  void _pickImage() {}
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+    setState(() => _pickedImagePath = picked.path);
+  }
 
-  void _save() {
+  Future<void> _save() async {
+    final currentUser = await UserService.loadUser();
+    if (currentUser == null) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+    final updated = currentUser.copyWith(
+      year: _selectedYear,
+      interests: [..._selectedInterests, ..._customInterests],
+      exchangePurposes: _selectedPurposes,
+      personalities: [..._selectedPersonalities, ..._customPersonalities],
+      languages: [..._selectedLanguages, ..._customLanguages],
+      description: _introController.text.trim(),
+      avatarUrl: _pickedImagePath.isNotEmpty ? _pickedImagePath : currentUser.avatarUrl,
+    );
+    await UserService.saveUser(updated);
+    if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

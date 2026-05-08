@@ -172,18 +172,15 @@ class _HelpingScreenState extends State<HelpingScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           '${post['authorName']}님의 도움 요청에\n응답할게요',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
+        content: const Text('채팅을 시작해서 도움을 드려보세요.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
+            child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-            ),
+          TextButton(
             onPressed: () {
               Navigator.pop(ctx);
 
@@ -209,7 +206,7 @@ class _HelpingScreenState extends State<HelpingScreen>
               // TODO: POST /api/messages/system → 시스템 메시지 전송
               widget.onStartChat(user, systemMessage);
             },
-            child: const Text('채팅 시작하기'),
+            child: const Text('채팅 시작하기', style: TextStyle(color: AppTheme.primary)),
           ),
         ],
       ),

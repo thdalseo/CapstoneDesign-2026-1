@@ -7,6 +7,8 @@ class UserModel {
   final String year;        // e.g. "3학년"
   final List<String> interests;
   final List<String> exchangePurposes;
+  final List<String> personalities;
+  final List<String> languages;
   final String description;
   final String email;
   final String? avatarUrl;
@@ -20,6 +22,8 @@ class UserModel {
     this.year = '',
     this.interests = const [],
     this.exchangePurposes = const [],
+    this.personalities = const [],
+    this.languages = const [],
     this.description = '',
     required this.email,
     this.avatarUrl,
@@ -27,6 +31,11 @@ class UserModel {
 
   // "🇰🇷 대한민국" → "🇰🇷"
   String get countryFlag => country.split(' ').first;
+
+  bool get isProfileComplete =>
+      year.isNotEmpty &&
+      interests.isNotEmpty &&
+      exchangePurposes.isNotEmpty;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -37,6 +46,8 @@ class UserModel {
         'year': year,
         'interests': interests,
         'exchangePurposes': exchangePurposes,
+        'personalities': personalities,
+        'languages': languages,
         'description': description,
         'email': email,
         'avatarUrl': avatarUrl,
@@ -57,6 +68,14 @@ class UserModel {
                 ?.map((e) => e as String)
                 .toList() ??
             [],
+        personalities: (json['personalities'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
+        languages: (json['languages'] as List<dynamic>?)
+                ?.map((e) => e as String)
+                .toList() ??
+            [],
         description: json['description'] as String? ?? '',
         email: json['email'] as String? ?? '',
         avatarUrl: json['avatarUrl'] as String?,
@@ -71,6 +90,8 @@ class UserModel {
     String? year,
     List<String>? interests,
     List<String>? exchangePurposes,
+    List<String>? personalities,
+    List<String>? languages,
     String? description,
     String? email,
     String? avatarUrl,
@@ -84,6 +105,8 @@ class UserModel {
         year: year ?? this.year,
         interests: interests ?? this.interests,
         exchangePurposes: exchangePurposes ?? this.exchangePurposes,
+        personalities: personalities ?? this.personalities,
+        languages: languages ?? this.languages,
         description: description ?? this.description,
         email: email ?? this.email,
         avatarUrl: avatarUrl ?? this.avatarUrl,
