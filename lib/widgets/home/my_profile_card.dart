@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
 import '../../theme/app_theme.dart';
@@ -17,6 +19,13 @@ class MyProfileCard extends StatelessWidget {
     interests: ['여행', '카페탐방', '영화'],
     email: '',
   );
+
+  static Widget _buildAvatarImage(String url) {
+    if (kIsWeb || url.startsWith('http') || url.startsWith('blob:')) {
+      return Image.network(url, fit: BoxFit.cover);
+    }
+    return Image.file(File(url), fit: BoxFit.cover);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +59,7 @@ class MyProfileCard extends StatelessWidget {
               color: const Color(0xFFE8F0FE),
             ),
             child: u.avatarUrl != null
-                ? ClipOval(
-                    child: Image.network(u.avatarUrl!, fit: BoxFit.cover),
-                  )
+                ? ClipOval(child: _buildAvatarImage(u.avatarUrl!))
                 : const Icon(
                     Icons.person_rounded,
                     color: AppTheme.primary,

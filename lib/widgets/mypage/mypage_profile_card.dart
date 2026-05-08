@@ -1,45 +1,35 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../models/user_model.dart';
-import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 
-class MyPageProfileCard extends StatefulWidget {
-  const MyPageProfileCard({super.key});
+class MyPageProfileCard extends StatelessWidget {
+  final UserModel? user;
 
-  @override
-  State<MyPageProfileCard> createState() => _MyPageProfileCardState();
-}
+  const MyPageProfileCard({super.key, this.user});
 
-class _MyPageProfileCardState extends State<MyPageProfileCard> {
-  // TODO: 백엔드 API 연동 시 UserService.fetchProfile(accessToken) 으로 교체
   static const _fallback = UserModel(
-    name: '홍길동',
-    country: '🇰🇷 대한민국',
-    college: '공과대학',
-    major: '컴퓨터공학과',
-    year: '4학년',
+    name: '',
+    country: '',
+    college: '',
+    major: '',
     email: '',
   );
 
-  UserModel? _user;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final user = await UserService.loadUser();
-    if (mounted) setState(() => _user = user);
+  static Widget _buildAvatarImage(String url) {
+    if (kIsWeb || url.startsWith('http') || url.startsWith('blob:')) {
+      return Image.network(url, fit: BoxFit.cover);
+    }
+    return Image.file(File(url), fit: BoxFit.cover);
   }
 
   @override
   Widget build(BuildContext context) {
-    final u = _user ?? _fallback;
+    final u = user ?? _fallback;
     final subtitle = [
       if (u.college.isNotEmpty) u.college,
-      u.major,
+      if (u.major.isNotEmpty) u.major,
       if (u.year.isNotEmpty) u.year,
     ].join(' · ');
 
@@ -60,10 +50,7 @@ class _MyPageProfileCardState extends State<MyPageProfileCard> {
                   border: Border.all(color: const Color(0xFFD0DCEF), width: 1),
                 ),
                 child: u.avatarUrl != null
-                    ? ClipOval(
-                        child:
-                            Image.network(u.avatarUrl!, fit: BoxFit.cover),
-                      )
+                    ? ClipOval(child: _buildAvatarImage(u.avatarUrl!))
                     : const Icon(
                         Icons.person,
                         size: 40,
@@ -81,8 +68,7 @@ class _MyPageProfileCardState extends State<MyPageProfileCard> {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(
-                      Icons.camera_alt, size: 11, color: Colors.white),
+                  child: const Icon(Icons.camera_alt, size: 11, color: Colors.white),
                 ),
               ),
             ],
@@ -103,8 +89,7 @@ class _MyPageProfileCardState extends State<MyPageProfileCard> {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppTheme.textSecondary),
+                  style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
               ],
               const SizedBox(height: 4),

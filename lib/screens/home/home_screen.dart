@@ -98,6 +98,79 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildProfileIncompleteSection() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person_outline_rounded,
+                size: 36,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '프로필을 완성해주세요!',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfileScreen(user: _currentUser),
+                    ),
+                  );
+                  _loadUser();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '프로필 설정하러 가기',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody() {
     switch (_currentIndex) {
       case 0:
@@ -180,70 +253,79 @@ class _HomeScreenState extends State<HomeScreen> {
         // 내 프로필 카드
         MyProfileCard(
           user: _currentUser,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-          ),
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditProfileScreen(user: _currentUser),
+              ),
+            );
+            _loadUser();
+          },
         ),
         const SizedBox(height: 14),
 
-        // 카드 PageView — 남은 공간을 모두 채움
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: _matchList.length,
-            onPageChanged: (i) => setState(() => _currentPage = i),
-            itemBuilder: (context, index) {
-              final user = _matchList[index];
-              return AnimatedBuilder(
-                animation: _pageController,
-                builder: (context, child) {
-                  double scale = 1.0;
-                  if (_pageController.hasClients &&
-                      _pageController.page != null) {
-                    final diff = (_pageController.page! - index).abs();
-                    scale = (1.0 - diff * 0.05).clamp(0.95, 1.0);
-                  }
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
+        // 프로필 미완성 배너 or 매칭 카드
+        if (_currentUser != null && !_currentUser!.isProfileComplete) ...[
+          Expanded(child: _buildProfileIncompleteSection()),
+        ] else ...[
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _matchList.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, index) {
+                final user = _matchList[index];
+                return AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    double scale = 1.0;
+                    if (_pageController.hasClients &&
+                        _pageController.page != null) {
+                      final diff = (_pageController.page! - index).abs();
+                      scale = (1.0 - diff * 0.05).clamp(0.95, 1.0);
+                    }
+                    return Transform.scale(scale: scale, child: child);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    child: MatchCard(
+                      user: user,
+                      isMatched: _matchedUsers.any((u) => u.name == user.name),
+                      onMatchTap: () => _toggleMatched(user),
+                    ),
                   ),
-                  child: MatchCard(
-                    user: user,
-                    isMatched: _matchedUsers.any((u) => u.name == user.name),
-                    onMatchTap: () => _toggleMatched(user),
-                  ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
 
-        // 페이지 인디케이터 (작은 원 3개)
-        Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _matchList.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: _currentPage == index ? 9 : 7,
-                height: _currentPage == index ? 9 : 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentPage == index
-                      ? AppTheme.primary
-                      : const Color(0xFFD0DCEF),
+          // 페이지 인디케이터 (작은 원 3개)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _matchList.length,
+                (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentPage == index ? 9 : 7,
+                  height: _currentPage == index ? 9 : 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentPage == index
+                        ? AppTheme.primary
+                        : const Color(0xFFD0DCEF),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

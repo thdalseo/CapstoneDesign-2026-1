@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth/dropdown_field.dart';
 import '../../widgets/helping/picker_sheets.dart';
@@ -18,6 +20,7 @@ class _WritePostScreenState extends State<WritePostScreen> {
   final _placeController = TextEditingController();
   final _memoController = TextEditingController();
 
+  UserModel? _currentUser;
   String _selectedCategory = '수업';
   bool _isUrgent = false;
   DateTime? _selectedDate;
@@ -30,6 +33,9 @@ class _WritePostScreenState extends State<WritePostScreen> {
   @override
   void initState() {
     super.initState();
+    UserService.loadUser().then((u) {
+      if (mounted) setState(() => _currentUser = u);
+    });
     if (_isEditing) {
       final d = widget.initialData!;
       _titleController.text = d['title'] as String? ?? '';
@@ -117,8 +123,8 @@ class _WritePostScreenState extends State<WritePostScreen> {
       'date': _formatDate(_selectedDate),
       'time': _formatTime(_selectedTime),
       'memo': _memoController.text.trim(),
-      'authorName': widget.initialData?['authorName'] ?? '홍길동',
-      'major': widget.initialData?['major'] ?? '컴퓨터공학과',
+      'authorName': widget.initialData?['authorName'] ?? (_currentUser?.name ?? ''),
+      'major': widget.initialData?['major'] ?? (_currentUser?.major ?? ''),
       'timeAgo': '방금 전',
       'helperCount': widget.initialData?['helperCount'] ?? 0,
       'isCompleted': widget.initialData?['isCompleted'] ?? false,

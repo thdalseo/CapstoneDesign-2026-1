@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../auth/signup_screen.dart';
 import '../home/home_screen.dart';
@@ -25,13 +25,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _login() async {
-    // TODO: 로그인 API 연동
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    setState(() => _isLoading = false);
-    if (!mounted) return;
+    final email = _idController.text.trim();
+    final password = _passwordController.text;
+
+    // TODO: 개발 완료 후 아래 주석 해제하고 빈칸 통과 로직 제거
+    if (email.isNotEmpty && password.isNotEmpty) {
+      setState(() => _isLoading = true);
+      final valid = await UserService.checkCredentials(email, password);
+      setState(() => _isLoading = false);
+
+      if (!mounted) return;
+
+      if (!valid) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('이메일 또는 비밀번호가 올바르지 않아요'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        return;
+      }
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -67,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         controller: _idController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
-                          hintText: '아이디',
+                          hintText: '이메일 (아이디)',
                         ),
                       ),
                       const SizedBox(height: 12),
