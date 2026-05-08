@@ -1,11 +1,48 @@
 import 'package:flutter/material.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 
-class MyPageProfileCard extends StatelessWidget {
+class MyPageProfileCard extends StatefulWidget {
   const MyPageProfileCard({super.key});
 
   @override
+  State<MyPageProfileCard> createState() => _MyPageProfileCardState();
+}
+
+class _MyPageProfileCardState extends State<MyPageProfileCard> {
+  // TODO: 백엔드 API 연동 시 UserService.fetchProfile(accessToken) 으로 교체
+  static const _fallback = UserModel(
+    name: '홍길동',
+    country: '🇰🇷 대한민국',
+    college: '공과대학',
+    major: '컴퓨터공학과',
+    year: '4학년',
+    email: '',
+  );
+
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final user = await UserService.loadUser();
+    if (mounted) setState(() => _user = user);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final u = _user ?? _fallback;
+    final subtitle = [
+      if (u.college.isNotEmpty) u.college,
+      u.major,
+      if (u.year.isNotEmpty) u.year,
+    ].join(' · ');
+
     return Container(
       width: double.infinity,
       color: Colors.white,
@@ -22,7 +59,16 @@ class MyPageProfileCard extends StatelessWidget {
                   color: const Color(0xFFE8F0FE),
                   border: Border.all(color: const Color(0xFFD0DCEF), width: 1),
                 ),
-                child: const Icon(Icons.person, size: 40, color: Color(0xFFB0C4DE)),
+                child: u.avatarUrl != null
+                    ? ClipOval(
+                        child:
+                            Image.network(u.avatarUrl!, fit: BoxFit.cover),
+                      )
+                    : const Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Color(0xFFB0C4DE),
+                      ),
               ),
               Positioned(
                 bottom: 0,
@@ -35,30 +81,34 @@ class MyPageProfileCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(Icons.camera_alt, size: 11, color: Colors.white),
+                  child: const Icon(
+                      Icons.camera_alt, size: 11, color: Colors.white),
                 ),
               ),
             ],
           ),
           const SizedBox(width: 16),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '홍길동',
-                style: TextStyle(
+                u.name.isNotEmpty ? u.name : '이름 없음',
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textPrimary,
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
-                '공과대학 · 컴퓨터공학과',
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-              ),
-              SizedBox(height: 4),
-              Row(
+              if (subtitle.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                      fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+              const SizedBox(height: 4),
+              const Row(
                 children: [
                   Icon(Icons.verified, size: 14, color: AppTheme.mint),
                   SizedBox(width: 4),

@@ -6,17 +6,21 @@ class ChatRoomTile extends StatelessWidget {
   final MatchUser user;
   final VoidCallback onTap;
   final int unreadCount;
+  final String? lastMessage;
+  final String? lastMessageTime;
 
   const ChatRoomTile({
     super.key,
     required this.user,
     required this.onTap,
     this.unreadCount = 0,
+    this.lastMessage,
+    this.lastMessageTime,
   });
 
   @override
   Widget build(BuildContext context) {
-    final preview = user.description.replaceAll('\n', ' ');
+    final preview = lastMessage ?? '대화를 시작해보세요';
 
     return GestureDetector(
       onTap: onTap,
@@ -82,9 +86,9 @@ class ChatRoomTile extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  '방금',
-                  style: TextStyle(
+                Text(
+                  lastMessageTime ?? '',
+                  style: const TextStyle(
                     fontSize: 11,
                     color: AppTheme.textSecondary,
                   ),

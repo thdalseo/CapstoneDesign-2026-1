@@ -67,6 +67,8 @@ class ChattingScreen extends StatelessWidget {
         itemBuilder: (context, i) => ChatRoomTile(
           user: users[i],
           unreadCount: i == 0 ? 1 : 0,
+          lastMessage: i == 0 ? '같이 이야기 많이 해요!' : '저도 반가워요! 잘 부탁드려요 😄',
+          lastMessageTime: i == 0 ? '오전 10:23' : '어제',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(

@@ -14,3 +14,7 @@ const List<String> languageList = [
   '베트남어', '프랑스어', '독일어', '스페인어',
   '러시아어', '아랍어',
 ];
+
+const List<String> exchangePurposeList = [
+  '언어교환', '학업도움', '친구사귀기', '문화교류',
+];

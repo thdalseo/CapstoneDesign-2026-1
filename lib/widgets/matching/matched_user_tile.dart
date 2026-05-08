@@ -20,13 +20,13 @@ class MatchedUserTile extends StatelessWidget {
       onTap: () => _showDetail(context),
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
             // 아바타
             Container(
-              width: 46,
-              height: 46,
+              width: 50,
+              height: 50,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Color(0xFFE8F0FE),
@@ -34,7 +34,7 @@ class MatchedUserTile extends StatelessWidget {
               child: const Icon(
                 Icons.person_rounded,
                 color: AppTheme.primary,
-                size: 24,
+                size: 26,
               ),
             ),
             const SizedBox(width: 12),
