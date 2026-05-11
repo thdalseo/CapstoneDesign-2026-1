@@ -27,7 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _selectedYear = '';
   List<String> _selectedInterests = [];
   List<String> _selectedPersonalities = [];
-  List<String> _selectedLanguages = ['한국어'];
+  List<String> _selectedLanguages = [];
   List<String> _selectedPurposes = [];
 
   final List<String> _customInterests = [];
@@ -46,7 +46,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       _selectedInterests = List.of(u.interests);
       _selectedPurposes = List.of(u.exchangePurposes);
       _selectedPersonalities = List.of(u.personalities);
-      _selectedLanguages = u.languages.isNotEmpty ? List.of(u.languages) : ['한국어'];
+      _selectedLanguages = List.of(u.languages);
       if (u.avatarUrl != null && !u.avatarUrl!.startsWith('http')) {
         _pickedImagePath = u.avatarUrl!;
       }

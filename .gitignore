@@ -34,3 +34,5 @@ Pods/
 .vscode/
 *.swp
 *.lock
+.dart_tool/
+.claude/
