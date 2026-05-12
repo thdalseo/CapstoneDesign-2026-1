@@ -29,10 +29,10 @@ def send_verification_email(target_email: str):
     code = generate_verification_code()
     
     msg = EmailMessage()
-    msg['Subject'] = "[KNU 교류 앱] 이메일 인증 번호"
+    msg['Subject'] = "[KNU BRIDGE] 이메일 인증 번호"
     msg['From'] = SMTP_USER
     msg['To'] = target_email
-    msg.set_content(f"안녕하세요! 서비스 이용을 위한 인증 번호는 [{code}] 입니다.\n5분 내에 입력해 주세요.")
+    msg.set_content(f"안녕하세요! 서비스 이용을 위한 인증 번호는 [{code}] 입니다.\n10분 내에 입력해 주세요.")
 
     try:
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as smtp:

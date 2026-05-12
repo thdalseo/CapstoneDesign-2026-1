@@ -67,6 +67,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
 
     setState(() => _isLoading = false);
+<<<<<<< HEAD
+=======
+
+>>>>>>> d2950ad090eaefb70e2143adda888c6b6325a3c5
     if (!mounted) return;
     Navigator.pushReplacement(
       context,

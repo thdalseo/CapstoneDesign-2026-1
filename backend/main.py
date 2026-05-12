@@ -5,6 +5,7 @@ from app.routers import auth
 
 app = FastAPI(title="Bridge API")
 
+# Flutter(로컬 개발) → FastAPI 요청 허용
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

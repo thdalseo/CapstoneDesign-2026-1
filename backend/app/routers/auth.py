@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 CODE_EXPIRE_MINUTES = 10
 
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+# ── helpers ───────────────────────────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
