@@ -30,10 +30,11 @@ class User(Base):
     country = Column(String(50), nullable=False)
     college = Column(String(100), nullable=False)
     major = Column(String(100), nullable=False)
-    year = Column(String(20), nullable=False)
+    year = Column(String(20), nullable=True)
 
     description = Column(Text, nullable=True)
     avatar_url = Column(String(255), nullable=True)
+    is_verified = Column(Boolean, nullable=False, default=False)
     is_international = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
