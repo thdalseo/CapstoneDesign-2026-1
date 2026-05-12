@@ -17,6 +17,27 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
+  static Future<Map<String, dynamic>> delete(
+    String path,
+    Map<String, dynamic> body,
+  ) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final res = await http.delete(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return decoded;
+    }
+
+    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+    throw ApiException(res.statusCode, detail);
+  }
+
   static Future<Map<String, dynamic>> post(
     String path,
     Map<String, dynamic> body,

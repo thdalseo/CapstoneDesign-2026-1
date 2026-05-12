@@ -33,6 +33,18 @@ class AuthService {
     return user;
   }
 
+  /// 회원탈퇴 → 서버에서 삭제 + 로컬 데이터 삭제
+  static Future<void> deleteAccount({
+    required String email,
+    required String password,
+  }) async {
+    await ApiClient.delete('/auth/me', {
+      'email': email,
+      'password': password,
+    });
+    await UserService.clearUser();
+  }
+
   /// 로그인 → 로컬에 유저 저장
   static Future<UserModel> login({
     required String email,

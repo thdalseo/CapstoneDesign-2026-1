@@ -64,6 +64,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class DeleteAccountRequest(BaseModel):
+    email: str
+    password: str
+
+
 # ── endpoints ─────────────────────────────────────────────────────────────────
 
 @router.post("/send-code")
@@ -124,6 +129,17 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.refresh(user)
 
     return {"message": "회원가입이 완료되었습니다.", "user": _user_dict(user)}
+
+
+@router.delete("/me")
+def delete_account(req: DeleteAccountRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user or not _verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 올바르지 않습니다.")
+
+    db.delete(user)
+    db.commit()
+    return {"message": "회원탈퇴가 완료되었습니다."}
 
 
 @router.post("/login")
