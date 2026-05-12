@@ -51,4 +51,8 @@ async def verify_code(request: VerifyRequest):
         del verification_db[request.email]
         return {"message": "학교 메일 인증이 완료되었습니다!"}
     else:
+<<<<<<< HEAD
         raise HTTPException(status_code=400, detail="인증 코드가 일치하지 않습니다.")
+=======
+        raise HTTPException(status_code=400, detail="인증 코드가 일치하지 않습니다.")
+>>>>>>> 905be17a29c64a57c0f6c706e3441a9bfcbeffde
