@@ -36,3 +36,10 @@ Pods/
 *.lock
 .dart_tool/
 .claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+backend/bridge.db
