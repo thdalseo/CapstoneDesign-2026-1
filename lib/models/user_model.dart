@@ -53,33 +53,33 @@ class UserModel {
         'avatarUrl': avatarUrl,
       };
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        country: json['country'] as String? ?? '',
-        college: json['college'] as String? ?? '',
-        major: json['major'] as String? ?? '',
-        year: json['year'] as String? ?? '',
-        interests: (json['interests'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        exchangePurposes: (json['exchangePurposes'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        personalities: (json['personalities'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        languages: (json['languages'] as List<dynamic>?)
-                ?.map((e) => e as String)
-                .toList() ??
-            [],
-        description: json['description'] as String? ?? '',
-        email: json['email'] as String? ?? '',
-        avatarUrl: json['avatarUrl'] as String?,
-      );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    // 백엔드(snake_case) · 로컬(camelCase) 모두 지원
+    String _str(String key1, [String? key2]) =>
+        (json[key1] ?? (key2 != null ? json[key2] : null))?.toString() ?? '';
+
+    List<String> _list(String key1, [String? key2]) {
+      final raw = json[key1] ?? (key2 != null ? json[key2] : null);
+      return (raw as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    }
+
+    return UserModel(
+      // 백엔드는 int, 로컬 저장은 String
+      id: json['id']?.toString() ?? '',
+      name: _str('name'),
+      country: _str('country'),
+      college: _str('college'),
+      major: _str('major'),
+      year: _str('year'),
+      interests: _list('interests'),
+      exchangePurposes: _list('exchange_purposes', 'exchangePurposes'),
+      personalities: _list('personalities'),
+      languages: _list('languages'),
+      description: _str('description'),
+      email: _str('email'),
+      avatarUrl: (json['avatar_url'] ?? json['avatarUrl']) as String?,
+    );
+  }
 
   UserModel copyWith({
     String? id,

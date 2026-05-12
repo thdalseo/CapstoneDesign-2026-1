@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/user_service.dart';
+import '../../core/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../auth/signup_screen.dart';
 import '../home/home_screen.dart';
@@ -28,26 +29,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final email = _idController.text.trim();
     final password = _passwordController.text;
 
-    // TODO: 개발 완료 후 아래 주석 해제하고 빈칸 통과 로직 제거
-    if (email.isNotEmpty && password.isNotEmpty) {
-      setState(() => _isLoading = true);
-      final valid = await UserService.checkCredentials(email, password);
-      setState(() => _isLoading = false);
-
-      if (!mounted) return;
-
-      if (!valid) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('이메일 또는 비밀번호가 올바르지 않아요'),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        return;
-      }
+    // 개발 편의: 빈칸이면 서버 호출 없이 바로 홈으로 (백엔드 완성 후 제거)
+    if (email.isEmpty || password.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+      return;
     }
 
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService.login(email: email, password: password);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      setState(() => _isLoading = false);
+      return;
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('서버에 연결할 수 없어요. 네트워크를 확인해주세요.'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),

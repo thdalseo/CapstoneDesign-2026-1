@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
-import '../../services/user_service.dart';
+import '../../core/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/knu_data.dart';
 import '../../widgets/auth/dropdown_field.dart';
@@ -58,17 +58,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
     final email = '${_emailPrefixController.text.trim()}@kangwon.ac.kr';
 
-    // 로컬에 프로필 저장 (백엔드 연동 전까지 SharedPreferences 사용)
-    await UserService.saveUser(
-      UserModel(
-        name: _nameController.text.trim(),
-        country: _selectedCountry!,
-        college: _selectedCollege!,
-        major: _selectedDept!,
-        email: email,
-      ),
-    );
-    await UserService.saveCredentials(email, _passwordController.text);
+    try {
+      await AuthService.sendCode(email);
+    } on ApiException catch (e) {
+      _showSnackBar(e.message);
+      setState(() => _isLoading = false);
+      return;
+    } catch (_) {
+      _showSnackBar('서버에 연결할 수 없어요. 네트워크를 확인해주세요.');
+      setState(() => _isLoading = false);
+      return;
+    }
 
     setState(() => _isLoading = false);
 
@@ -76,7 +76,14 @@ class _SignupScreenState extends State<SignupScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EmailVerifyScreen(email: email),
+        builder: (_) => EmailVerifyScreen(
+          email: email,
+          password: _passwordController.text,
+          name: _nameController.text.trim(),
+          country: _selectedCountry!,
+          college: _selectedCollege!,
+          major: _selectedDept!,
+        ),
       ),
     );
   }

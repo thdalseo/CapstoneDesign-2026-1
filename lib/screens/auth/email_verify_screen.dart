@@ -1,13 +1,28 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../core/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../home/home_screen.dart';
 
 class EmailVerifyScreen extends StatefulWidget {
   final String email;
+  final String password;
+  final String name;
+  final String country;
+  final String college;
+  final String major;
 
-  const EmailVerifyScreen({super.key, required this.email});
+  const EmailVerifyScreen({
+    super.key,
+    required this.email,
+    required this.password,
+    required this.name,
+    required this.country,
+    required this.college,
+    required this.major,
+  });
 
   @override
   State<EmailVerifyScreen> createState() => _EmailVerifyScreenState();
@@ -15,7 +30,7 @@ class EmailVerifyScreen extends StatefulWidget {
 
 class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
   static const _codeLength = 6;
-  static const _timerSeconds = 300; // 5분
+  static const _timerSeconds = 600; // 10분
 
   final List<TextEditingController> _controllers =
       List.generate(_codeLength, (_) => TextEditingController());
@@ -105,19 +120,26 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: 백엔드 API 연동
-    // final res = await http.post(
-    //   Uri.parse('$baseUrl/auth/verify-code'),
-    //   body: jsonEncode({'email': widget.email, 'code': _code}),
-    //   headers: {'Content-Type': 'application/json'},
-    // );
-    // if (res.statusCode != 200) {
-    //   _showError('인증 코드가 올바르지 않아요');
-    //   setState(() => _isLoading = false);
-    //   return;
-    // }
+    try {
+      await AuthService.register(
+        email: widget.email,
+        code: _code,
+        password: widget.password,
+        name: widget.name,
+        country: widget.country,
+        college: widget.college,
+        major: widget.major,
+      );
+    } on ApiException catch (e) {
+      _showError(e.message);
+      setState(() => _isLoading = false);
+      return;
+    } catch (_) {
+      _showError('서버에 연결할 수 없어요. 네트워크를 확인해주세요.');
+      setState(() => _isLoading = false);
+      return;
+    }
 
-    await Future.delayed(const Duration(seconds: 1)); // 임시 딜레이
     setState(() => _isLoading = false);
 
     if (!mounted) return;
@@ -129,12 +151,21 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
   }
 
   Future<void> _resend() async {
-    // TODO: 백엔드 API 연동
-    // await http.post(
-    //   Uri.parse('$baseUrl/auth/send-code'),
-    //   body: jsonEncode({'email': widget.email}),
-    //   headers: {'Content-Type': 'application/json'},
-    // );
+    setState(() => _isLoading = true);
+
+    try {
+      await AuthService.sendCode(widget.email);
+    } on ApiException catch (e) {
+      _showError(e.message);
+      setState(() => _isLoading = false);
+      return;
+    } catch (_) {
+      _showError('서버에 연결할 수 없어요. 네트워크를 확인해주세요.');
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    setState(() => _isLoading = false);
 
     for (final c in _controllers) c.clear();
     _focusNodes[0].requestFocus();
@@ -283,7 +314,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
 
             const SizedBox(height: 32),
 
-            // 인증 확인 버튼 (6칸 너비 = 44*6 + 10*5 = 314)
+            // 인증 확인 버튼
             SizedBox(
               width: 314,
               height: 46,
@@ -336,7 +367,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
 
             // 재발송 버튼
             TextButton(
-              onPressed: _resend,
+              onPressed: _isLoading ? null : _resend,
               child: const Text(
                 '인증 코드 다시 받기',
                 style: TextStyle(
