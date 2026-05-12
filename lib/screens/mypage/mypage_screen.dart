@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/mypage/mypage_profile_card.dart';
@@ -140,37 +142,98 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
+    final passwordController = TextEditingController();
+    bool passwordVisible = false;
+
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '회원탈퇴',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-        ),
-        content: const Text(
-          '탈퇴하면 모든 데이터가 삭제되며\n복구할 수 없어요. 정말 탈퇴하시겠어요?',
-          style: TextStyle(height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            '회원탈퇴',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await UserService.clearUser();
-              if (!mounted) return;
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-                (_) => false,
-              );
-            },
-            child: Text('탈퇴하기', style: TextStyle(color: Colors.red.shade400)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '탈퇴하면 모든 데이터가 삭제되며\n복구할 수 없어요.',
+                style: TextStyle(height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: !passwordVisible,
+                decoration: InputDecoration(
+                  hintText: '비밀번호 입력',
+                  hintStyle: const TextStyle(fontSize: 13),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: AppTheme.textSecondary,
+                    ),
+                    onPressed: () => setDialogState(() => passwordVisible = !passwordVisible),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                passwordController.dispose();
+                Navigator.pop(ctx);
+              },
+              child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final password = passwordController.text;
+                final email = _user?.email ?? '';
+                if (password.isEmpty) return;
+
+                Navigator.pop(ctx);
+
+                try {
+                  await AuthService.deleteAccount(email: email, password: password);
+                } on ApiException catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.message),
+                      backgroundColor: Colors.red.shade400,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                  return;
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('서버에 연결할 수 없어요.'),
+                      backgroundColor: Colors.red.shade400,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                  return;
+                }
+
+                if (!mounted) return;
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  (_) => false,
+                );
+              },
+              child: Text('탈퇴하기', style: TextStyle(color: Colors.red.shade400)),
+            ),
+          ],
+        ),
       ),
     );
   }
