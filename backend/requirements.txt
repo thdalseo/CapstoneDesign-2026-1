@@ -1,0 +1,8 @@
+fastapi[all]
+uvicorn[standard]
+sqlalchemy
+python-dotenv
+bcrypt
+# MySQL 사용 시 아래 두 줄 주석 해제
+# pymysql
+# cryptography

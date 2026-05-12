@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/user_model.dart';
-import '../../services/user_service.dart';
+import '../../core/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/knu_data.dart';
 import '../../widgets/auth/dropdown_field.dart';
@@ -41,34 +41,25 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCollege == null) {
-      _showSnackBar('단과대를 선택해주세요');
-      return;
-    }
-    if (_selectedDept == null) {
-      _showSnackBar('학부/학과를 선택해주세요');
-      return;
-    }
-    if (_selectedCountry == null) {
-      _showSnackBar('국가를 선택해주세요');
-      return;
-    }
+    if (_selectedCollege == null) { _showSnackBar('단과대를 선택해주세요'); return; }
+    if (_selectedDept == null) { _showSnackBar('학부/학과를 선택해주세요'); return; }
+    if (_selectedCountry == null) { _showSnackBar('국가를 선택해주세요'); return; }
 
     setState(() => _isLoading = true);
 
     final email = '${_emailPrefixController.text.trim()}@kangwon.ac.kr';
 
-    // 로컬에 프로필 저장 (백엔드 연동 전까지 SharedPreferences 사용)
-    await UserService.saveUser(
-      UserModel(
-        name: _nameController.text.trim(),
-        country: _selectedCountry!,
-        college: _selectedCollege!,
-        major: _selectedDept!,
-        email: email,
-      ),
-    );
-    await UserService.saveCredentials(email, _passwordController.text);
+    try {
+      await AuthService.sendCode(email);
+    } on ApiException catch (e) {
+      _showSnackBar(e.message);
+      setState(() => _isLoading = false);
+      return;
+    } catch (_) {
+      _showSnackBar('서버에 연결할 수 없어요. 네트워크를 확인해주세요.');
+      setState(() => _isLoading = false);
+      return;
+    }
 
     setState(() => _isLoading = false);
 
@@ -76,7 +67,14 @@ class _SignupScreenState extends State<SignupScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => EmailVerifyScreen(email: email),
+        builder: (_) => EmailVerifyScreen(
+          email: email,
+          password: _passwordController.text,
+          name: _nameController.text.trim(),
+          country: _selectedCountry!,
+          college: _selectedCollege!,
+          major: _selectedDept!,
+        ),
       ),
     );
   }
@@ -124,8 +122,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(hintText: '이름을 입력해주세요'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? '이름을 입력해주세요' : null,
+                validator: (v) => v == null || v.isEmpty ? '이름을 입력해주세요' : null,
               ),
               const SizedBox(height: 20),
 
@@ -146,21 +143,16 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   );
                   if (result != null) {
-                    setState(() {
-                      _selectedCollege = result;
-                      _selectedDept = null;
-                    });
+                    setState(() { _selectedCollege = result; _selectedDept = null; });
                   }
                 },
               ),
               const SizedBox(height: 20),
 
-              // 학부
+              // 학부/학과
               _label('학부/학과'),
               SelectorButton(
-                hint: _selectedCollege == null
-                    ? '단과대를 먼저 선택해주세요'
-                    : '학부/학과를 선택해주세요',
+                hint: _selectedCollege == null ? '단과대를 먼저 선택해주세요' : '학부/학과를 선택해주세요',
                 value: _selectedDept,
                 onTap: _selectedCollege == null
                     ? null
@@ -182,7 +174,19 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // 국가
               _label('국가'),
-              _buildCountrySelector(),
+              SelectorButton(
+                hint: '국가를 선택해주세요',
+                value: _selectedCountry,
+                onTap: () async {
+                  final result = await showModalBottomSheet<String>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => CountryPickerSheet(selectedCountry: _selectedCountry),
+                  );
+                  if (result != null) setState(() => _selectedCountry = result);
+                },
+              ),
               const SizedBox(height: 20),
 
               // 학교 이메일
@@ -194,18 +198,14 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: _emailPrefixController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(hintText: '이메일 아이디'),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? '이메일을 입력해주세요' : null,
+                      validator: (v) => v == null || v.isEmpty ? '이메일을 입력해주세요' : null,
                     ),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       '@kangwon.ac.kr',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                      ),
+                      style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                     ),
                   ),
                 ],
@@ -268,12 +268,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                         )
                       : const Text('인증하기'),
                 ),
@@ -296,22 +292,6 @@ class _SignupScreenState extends State<SignupScreen> {
           color: AppTheme.textPrimary,
         ),
       ),
-    );
-  }
-
-  Widget _buildCountrySelector() {
-    return SelectorButton(
-      hint: '국가를 선택해주세요',
-      value: _selectedCountry,
-      onTap: () async {
-        final result = await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => CountryPickerSheet(selectedCountry: _selectedCountry),
-        );
-        if (result != null) setState(() => _selectedCountry = result);
-      },
     );
   }
 }
