@@ -55,23 +55,15 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     // 백엔드(snake_case) · 로컬(camelCase) 모두 지원
-<<<<<<< HEAD
     String str(String key1, [String? key2]) =>
         (json[key1] ?? (key2 != null ? json[key2] : null))?.toString() ?? '';
 
     List<String> list(String key1, [String? key2]) {
-=======
-    String _str(String key1, [String? key2]) =>
-        (json[key1] ?? (key2 != null ? json[key2] : null))?.toString() ?? '';
-
-    List<String> _list(String key1, [String? key2]) {
->>>>>>> d2950ad090eaefb70e2143adda888c6b6325a3c5
       final raw = json[key1] ?? (key2 != null ? json[key2] : null);
       return (raw as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
     }
 
     return UserModel(
-<<<<<<< HEAD
       id: json['id']?.toString() ?? '',
       name: str('name'),
       country: str('country'),
@@ -84,21 +76,6 @@ class UserModel {
       languages: list('languages'),
       description: str('description'),
       email: str('email'),
-=======
-      // 백엔드는 int, 로컬 저장은 String
-      id: json['id']?.toString() ?? '',
-      name: _str('name'),
-      country: _str('country'),
-      college: _str('college'),
-      major: _str('major'),
-      year: _str('year'),
-      interests: _list('interests'),
-      exchangePurposes: _list('exchange_purposes', 'exchangePurposes'),
-      personalities: _list('personalities'),
-      languages: _list('languages'),
-      description: _str('description'),
-      email: _str('email'),
->>>>>>> d2950ad090eaefb70e2143adda888c6b6325a3c5
       avatarUrl: (json['avatar_url'] ?? json['avatarUrl']) as String?,
     );
   }
