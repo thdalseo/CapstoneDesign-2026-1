@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
@@ -119,8 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '프로필을 완성해주세요!',
+            Text(
+              'home.profile_incomplete_title'.tr(),
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
@@ -128,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.',
+            Text(
+              'home.profile_incomplete_desc'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -159,8 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
-                '프로필 설정하러 가기',
+              child: Text(
+                'home.go_to_profile'.tr(),
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
@@ -219,7 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '안녕하세요, ${_currentUser?.name ?? ''}님! 👋',
+                    'home.greeting'
+                        .tr(namedArgs: {'name': _currentUser?.name ?? ''}),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -228,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    '당신과 잘 맞는 친구들을 소개할게요.',
+                    'home.subtitle'.tr(),
                     style: TextStyle(
                       fontSize: 13,
                       color: AppTheme.textSecondary,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
@@ -41,8 +42,8 @@ class ChatInputBar extends StatelessWidget {
                   fontSize: 14,
                   color: AppTheme.textPrimary,
                 ),
-                decoration: const InputDecoration(
-                  hintText: '메시지를 입력하세요',
+                decoration: InputDecoration(
+                  hintText: 'chat.input_hint'.tr(),
                   hintStyle: TextStyle(
                     fontSize: 14,
                     color: AppTheme.textSecondary,

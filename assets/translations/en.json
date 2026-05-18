@@ -1,0 +1,127 @@
+{
+  "nav": {
+    "home": "Home",
+    "matching": "Match",
+    "chat": "Chat",
+    "help": "Help",
+    "my": "My"
+  },
+
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "OK",
+    "delete": "Delete",
+    "save": "Save",
+    "edit": "Edit",
+    "close": "Close",
+    "network_error": "Cannot connect to server.",
+    "login_required": "Login required."
+  },
+
+  "home": {
+    "greeting": "Hello, {name}! 👋",
+    "subtitle": "Here are friends who match well with you.",
+    "profile_incomplete_title": "Complete your profile!",
+    "profile_incomplete_desc": "Set your grade, interests, and exchange purpose\nto find friends who match you.",
+    "go_to_profile": "Set up profile"
+  },
+
+  "matching": {
+    "title": "Matching",
+    "empty_title": "No matched friends yet",
+    "empty_desc": "Press the puzzle button on Home\nto send a match request!"
+  },
+
+  "chat": {
+    "title": "Chat",
+    "input_hint": "Type a message",
+    "empty_title": "No chat rooms yet",
+    "empty_desc": "Press the chat button on a matched\nfriend's profile to start chatting!",
+    "room_start_hint": "Start a conversation",
+    "greeting": "Start a conversation with {name}!",
+    "suggestion_label": "💬 Icebreaking suggestions",
+    "suggestion_desc": "Tap a suggestion below",
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "conn_error": "Connection error",
+    "offline": "Offline",
+    "suggestions": [
+      "Hello! Nice to meet you 😊",
+      "What language do you want to learn?",
+      "What is your favorite food in Korea?",
+      "What do you usually do on weekends?",
+      "What are your interests?",
+      "How is your school life?"
+    ]
+  },
+
+  "help": {
+    "title": "Help",
+    "tab_all": "All",
+    "tab_mine": "My Posts",
+    "post_count": "{count} posts",
+    "sort_recent": "Recent",
+    "sort_urgent": "Urgent",
+    "load_more": "Load more ({remaining} left)",
+    "empty_title": "No posts yet",
+    "empty_desc": "Write a post if you need help!",
+    "cat_all": "All",
+    "cat_living": "Living",
+    "cat_class": "Class",
+    "cat_language": "Language",
+    "cat_medical": "Medical",
+    "cat_campus": "Campus",
+    "cat_admin": "Admin",
+    "badge_urgent": "Urgent",
+    "badge_complete": "Done",
+    "helper_count": "{count} helpers",
+    "delete_title": "Delete Post",
+    "delete_confirm": "Are you sure you want to delete?",
+    "dialog_title": "Responding to\n{name}'s help request",
+    "dialog_content": "Start a chat to offer your help.",
+    "start_chat": "Start Chat",
+    "btn_complete": "Done",
+    "btn_edit": "Edit",
+    "btn_delete": "Delete",
+    "btn_help": "Help"
+  },
+
+  "write_post": {
+    "title_create": "Request Help",
+    "title_edit": "Edit Post",
+    "category": "Category",
+    "category_hint": "Select a category",
+    "urgent": "Urgent",
+    "title_field": "Title",
+    "title_hint": "Enter a title",
+    "title_required": "Please enter a title",
+    "place": "Place",
+    "place_hint": "Enter a place",
+    "place_required": "Please enter a place",
+    "date": "Date",
+    "date_hint": "Select a date",
+    "time": "Time",
+    "time_hint": "Select a time",
+    "memo": "Note",
+    "memo_hint": "Describe what help you need",
+    "submit": "Submit",
+    "update": "Update"
+  },
+
+  "mypage": {
+    "title": "My Page",
+    "section_profile": "Profile",
+    "edit_profile": "Edit Profile",
+    "section_app": "App Settings",
+    "language": "Change Language",
+    "section_account": "Account",
+    "logout": "Logout",
+    "logout_title": "Logout",
+    "logout_confirm": "Are you sure you want to logout?",
+    "delete_account": "Delete Account",
+    "delete_account_title": "Delete Account",
+    "delete_account_desc": "All data will be permanently deleted\nand cannot be recovered.",
+    "password_hint": "Enter password",
+    "withdraw": "Delete Account"
+  }
+}

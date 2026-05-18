@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../theme/app_theme.dart';
@@ -18,9 +19,9 @@ class ChattingScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
           child: Row(
             children: [
-              const Text(
-                '채팅',
-                style: TextStyle(
+              Text(
+                'chat.title'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -67,7 +68,8 @@ class ChattingScreen extends StatelessWidget {
         itemBuilder: (context, i) => ChatRoomTile(
           user: users[i],
           unreadCount: i == 0 ? 1 : 0,
-          lastMessage: i == 0 ? '같이 이야기 많이 해요!' : '저도 반가워요! 잘 부탁드려요 😄',
+          lastMessage:
+              i == 0 ? '같이 이야기 많이 해요!' : '저도 반가워요! 잘 부탁드려요 😄',
           lastMessageTime: i == 0 ? '오전 10:23' : '어제',
           onTap: () => Navigator.push(
             context,
@@ -100,19 +102,19 @@ class ChattingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '아직 채팅방이 없어요',
-              style: TextStyle(
+            Text(
+              'chat.empty_title'.tr(),
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              '매칭된 친구의 프로필에서\n채팅 버튼을 눌러 대화를 시작해보세요!',
+            Text(
+              'chat.empty_desc'.tr(),
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppTheme.textSecondary,
                 height: 1.6,

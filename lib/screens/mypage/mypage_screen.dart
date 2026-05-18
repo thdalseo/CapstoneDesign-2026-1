@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/user_model.dart';
@@ -38,8 +39,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          '마이페이지',
+        title: Text(
+          'mypage.title'.tr(),
           style: TextStyle(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
@@ -54,11 +55,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
             MyPageProfileCard(user: _user),
             const SizedBox(height: 12),
             MyPageSection(
-              title: '프로필 설정',
+              title: 'mypage.section_profile'.tr(),
               items: [
                 MyPageMenuItem(
                   icon: Icons.edit_outlined,
-                  label: '프로필 편집',
+                  label: 'mypage.edit_profile'.tr(),
                   onTap: () async {
                     await Navigator.push(
                       context,
@@ -73,29 +74,30 @@ class _MyPageScreenState extends State<MyPageScreen> {
             ),
             const SizedBox(height: 12),
             MyPageSection(
-              title: '앱 설정',
+              title: 'mypage.section_app'.tr(),
               items: [
                 MyPageMenuItem(
                   icon: Icons.language_outlined,
-                  label: '언어 변경',
-                  onTap: () {
-                    // TODO: 언어 변경 기능 구현
-                  },
+                  label: 'mypage.language'.tr(),
+                  currentValue: context.locale.languageCode == 'ko'
+                      ? '한국어'
+                      : 'English',
+                  onTap: () => _showLanguagePicker(context),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             MyPageSection(
-              title: '계정',
+              title: 'mypage.section_account'.tr(),
               items: [
                 MyPageMenuItem(
                   icon: Icons.logout,
-                  label: '로그아웃',
+                  label: 'mypage.logout'.tr(),
                   onTap: () => _showLogoutDialog(context),
                 ),
                 MyPageMenuItem(
                   icon: Icons.person_remove_outlined,
-                  label: '회원탈퇴',
+                  label: 'mypage.delete_account'.tr(),
                   onTap: () => _showDeleteAccountDialog(context),
                   isDestructive: true,
                 ),
@@ -108,20 +110,111 @@ class _MyPageScreenState extends State<MyPageScreen> {
     );
   }
 
+  void _showLanguagePicker(BuildContext context) {
+    final languages = [
+      {'locale': const Locale('ko'), 'label': '한국어', 'flag': '🇰🇷'},
+      {'locale': const Locale('en'), 'label': 'English', 'flag': '🇺🇸'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final currentCode = context.locale.languageCode;
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: const EdgeInsets.only(bottom: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 핸들
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'mypage.language'.tr(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                ...languages.map((lang) {
+                  final locale = lang['locale'] as Locale;
+                  final isSelected = locale.languageCode == currentCode;
+                  return InkWell(
+                    onTap: () {
+                      context.setLocale(locale);
+                      Navigator.pop(ctx);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 16),
+                      child: Row(
+                        children: [
+                          Text(
+                            lang['flag'] as String,
+                            style: const TextStyle(fontSize: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            lang['label'] as String,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                              color: isSelected
+                                  ? AppTheme.primary
+                                  : AppTheme.textPrimary,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isSelected)
+                            Icon(Icons.check_rounded,
+                                color: AppTheme.primary, size: 20),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '로그아웃',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        title: Text(
+          'mypage.logout_title'.tr(),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
-        content: const Text('정말 로그아웃 하시겠어요?'),
+        content: Text('mypage.logout_confirm'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
+            child: Text('common.cancel'.tr(),
+                style: const TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -134,7 +227,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 (_) => false,
               );
             },
-            child: const Text('로그아웃', style: TextStyle(color: AppTheme.primary)),
+            child: Text('mypage.logout'.tr(),
+                style: const TextStyle(color: AppTheme.primary)),
           ),
         ],
       ),
@@ -150,16 +244,16 @@ class _MyPageScreenState extends State<MyPageScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text(
-            '회원탈퇴',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          title: Text(
+            'mypage.delete_account_title'.tr(),
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '탈퇴하면 모든 데이터가 삭제되며\n복구할 수 없어요.',
+              Text(
+                'mypage.delete_account_desc'.tr(),
                 style: TextStyle(height: 1.5),
               ),
               const SizedBox(height: 16),
@@ -167,7 +261,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 controller: passwordController,
                 obscureText: !passwordVisible,
                 decoration: InputDecoration(
-                  hintText: '비밀번호 입력',
+                  hintText: 'mypage.password_hint'.tr(),
                   hintStyle: const TextStyle(fontSize: 13),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -187,7 +281,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 passwordController.dispose();
                 Navigator.pop(ctx);
               },
-              child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
+              child: Text('common.cancel'.tr(),
+                  style: const TextStyle(color: AppTheme.textSecondary)),
             ),
             TextButton(
               onPressed: () async {
@@ -230,7 +325,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   (_) => false,
                 );
               },
-              child: Text('탈퇴하기', style: TextStyle(color: Colors.red.shade400)),
+              child: Text('mypage.withdraw'.tr(),
+                  style: TextStyle(color: Colors.red.shade400)),
             ),
           ],
         ),

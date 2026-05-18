@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/chat_message.dart';
 import '../../models/match_user.dart';
@@ -41,12 +42,10 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   }
 
   Future<void> _init() async {
-    // 연결 상태 구독
     _service.connectionState.listen((state) {
       if (mounted) setState(() => _connState = state);
     });
 
-    // 수신 메시지 구독
     _messageSub = _service.messageStream.listen((msg) {
       if (mounted) {
         setState(() => _messages.add(msg));
@@ -54,7 +53,6 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       }
     });
 
-    // 히스토리 로드 후 연결
     final history = await _service.fetchHistory(widget.user.name);
     if (mounted) {
       setState(() {
@@ -96,15 +94,6 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     _scrollToBottom();
   }
 
-  static const List<String> _suggestions = [
-    '안녕하세요! 만나서 반가워요 😊',
-    '어떤 언어를 배우고 싶으세요?',
-    '한국에서 가장 좋아하는 음식이 뭐예요?',
-    '주말에 보통 뭐 하세요?',
-    '관심사가 뭐예요?',
-    '학교 생활은 어때요?',
-  ];
-
   Widget _buildEmptyWithSuggestions() {
     return Center(
       child: Column(
@@ -125,7 +114,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            '${widget.user.name}님과 대화를 시작해보세요!',
+            'chat.greeting'.tr(namedArgs: {'name': widget.user.name}),
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -133,9 +122,10 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            '아래 추천 문구를 눌러보세요',
-            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          Text(
+            'chat.suggestion_desc'.tr(),
+            style: const TextStyle(
+                fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -150,11 +140,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
-              '💬 아이스브레이킹 추천 문구',
-              style: TextStyle(
+              'chat.suggestion_label'.tr(),
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textSecondary,
@@ -164,7 +154,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: _suggestions.map((text) {
+              children: _getSuggestions().map((text) {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: GestureDetector(
@@ -176,7 +166,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         color: const Color(0xFFF0F4FF),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                            color: AppTheme.primary.withValues(alpha: 0.25)),
+                            color:
+                                AppTheme.primary.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         text,
@@ -195,6 +186,27 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         ],
       ),
     );
+  }
+
+  List<String> _getSuggestions() {
+    final isEn = context.locale.languageCode == 'en';
+    return isEn
+        ? [
+            'Hello! Nice to meet you 😊',
+            'What language do you want to learn?',
+            'What is your favorite food in Korea?',
+            'What do you usually do on weekends?',
+            'What are your interests?',
+            'How is your school life?',
+          ]
+        : [
+            '안녕하세요! 만나서 반가워요 😊',
+            '어떤 언어를 배우고 싶으세요?',
+            '한국에서 가장 좋아하는 음식이 뭐예요?',
+            '주말에 보통 뭐 하세요?',
+            '관심사가 뭐예요?',
+            '학교 생활은 어때요?',
+          ];
   }
 
   void _scrollToBottom() {
@@ -301,7 +313,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   }
 }
 
-/// 앱바 아래 연결 상태를 한 줄로 표시
+/// 앱바 연결 상태 표시
 class _ConnectionLabel extends StatelessWidget {
   final ChatConnectionState state;
 
@@ -309,15 +321,15 @@ class _ConnectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (state) {
-      ChatConnectionState.connecting => ('연결 중...', AppTheme.textSecondary),
-      ChatConnectionState.connected => ('연결됨', AppTheme.mint),
-      ChatConnectionState.error => ('연결 오류', AppTheme.coral),
-      ChatConnectionState.disconnected => ('오프라인', AppTheme.textSecondary),
+    final (key, color) = switch (state) {
+      ChatConnectionState.connecting => ('chat.connecting', AppTheme.textSecondary),
+      ChatConnectionState.connected => ('chat.connected', AppTheme.mint),
+      ChatConnectionState.error => ('chat.conn_error', AppTheme.coral),
+      ChatConnectionState.disconnected => ('chat.offline', AppTheme.textSecondary),
     };
 
     return Text(
-      label,
+      key.tr(),
       style: TextStyle(fontSize: 11, color: color),
     );
   }

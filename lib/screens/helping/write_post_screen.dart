@@ -1,5 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../models/user_model.dart';
+import '../../services/help_post_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/auth/dropdown_field.dart';
@@ -25,8 +28,21 @@ class _WritePostScreenState extends State<WritePostScreen> {
   bool _isUrgent = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+  bool _isSubmitting = false;
 
-  static const List<String> _categories = ['생활', '수업', '언어', '의료', '캠퍼스', '행정'];
+  // DB 저장값(한국어) 그대로 유지
+  static const List<String> _categoryValues = [
+    '생활', '수업', '언어', '의료', '캠퍼스', '행정',
+  ];
+
+  static const Map<String, String> _categoryKeys = {
+    '생활': 'help.cat_living',
+    '수업': 'help.cat_class',
+    '언어': 'help.cat_language',
+    '의료': 'help.cat_medical',
+    '캠퍼스': 'help.cat_campus',
+    '행정': 'help.cat_admin',
+  };
 
   bool get _isEditing => widget.initialData != null;
 
@@ -42,8 +58,31 @@ class _WritePostScreenState extends State<WritePostScreen> {
       _placeController.text = d['place'] as String? ?? '';
       _memoController.text = d['memo'] as String? ?? '';
       final cat = d['category'] as String? ?? '수업';
-      _selectedCategory = _categories.contains(cat) ? cat : '수업';
+      _selectedCategory = _categoryValues.contains(cat) ? cat : '수업';
       _isUrgent = d['isUrgent'] as bool? ?? false;
+
+      final rawDate = d['rawDate'] as String? ?? '';
+      if (rawDate.isNotEmpty) {
+        final parts = rawDate.split('-');
+        if (parts.length == 3) {
+          _selectedDate = DateTime(
+            int.tryParse(parts[0]) ?? DateTime.now().year,
+            int.tryParse(parts[1]) ?? 1,
+            int.tryParse(parts[2]) ?? 1,
+          );
+        }
+      }
+
+      final rawTime = d['rawTime'] as String? ?? '';
+      if (rawTime.isNotEmpty) {
+        final parts = rawTime.split(':');
+        if (parts.length >= 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.tryParse(parts[0]) ?? 0,
+            minute: int.tryParse(parts[1]) ?? 0,
+          );
+        }
+      }
     }
   }
 
@@ -57,12 +96,11 @@ class _WritePostScreenState extends State<WritePostScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final initial = _selectedDate ?? now;
     final result = await showModalBottomSheet<DateTime>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DatePickerSheet(initialDate: initial),
+      builder: (_) => DatePickerSheet(initialDate: _selectedDate ?? now),
     );
     if (result != null) setState(() => _selectedDate = result);
   }
@@ -84,53 +122,93 @@ class _WritePostScreenState extends State<WritePostScreen> {
     }
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return '날짜를 선택해주세요';
+  String _formatDateDisplay(DateTime? date) {
+    if (date == null) return 'write_post.date_hint'.tr();
     return '${date.year}년 ${date.month}월 ${date.day}일';
   }
 
-  String _formatTime(TimeOfDay? time) {
-    if (time == null) return '시간을 선택해주세요';
+  String _formatTimeDisplay(TimeOfDay? time) {
+    if (time == null) return 'write_post.time_hint'.tr();
     final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
     final minute = time.minute.toString().padLeft(2, '0');
     final period = time.period == DayPeriod.am ? '오전' : '오후';
     return '$period $hour:$minute';
   }
 
-  void _submit() {
+  String _toApiDate(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
+
+  String _toApiTime(TimeOfDay time) =>
+      '${time.hour.toString().padLeft(2, '0')}:'
+      '${time.minute.toString().padLeft(2, '0')}:00';
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDate == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('날짜를 선택해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('write_post.date_hint'.tr())));
       return;
     }
     if (_selectedTime == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('시간을 선택해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('write_post.time_hint'.tr())));
+      return;
+    }
+    if (_currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('common.login_required'.tr())));
       return;
     }
 
-    // TODO: 백엔드 API 연동
-    // POST /api/help-posts      → 글 작성
-    // PUT  /api/help-posts/{id} → 글 수정
-
-    final result = {
-      'id': widget.initialData?['id'] ?? DateTime.now().millisecondsSinceEpoch,
-      'category': _selectedCategory,
-      'isUrgent': _isUrgent,
-      'title': _titleController.text.trim(),
-      'place': _placeController.text.trim(),
-      'date': _formatDate(_selectedDate),
-      'time': _formatTime(_selectedTime),
-      'memo': _memoController.text.trim(),
-      'authorName': widget.initialData?['authorName'] ?? (_currentUser?.name ?? ''),
-      'major': widget.initialData?['major'] ?? (_currentUser?.major ?? ''),
-      'timeAgo': '방금 전',
-      'helperCount': widget.initialData?['helperCount'] ?? 0,
-      'isCompleted': widget.initialData?['isCompleted'] ?? false,
-      'isMyPost': true,
-    };
-    Navigator.pop(context, result);
+    setState(() => _isSubmitting = true);
+    try {
+      if (_isEditing) {
+        final postId = widget.initialData!['id'] as int;
+        await HelpPostService.updatePost(
+          postId,
+          category: _selectedCategory,
+          title: _titleController.text.trim(),
+          place: _placeController.text.trim(),
+          date: _toApiDate(_selectedDate!),
+          time: _toApiTime(_selectedTime!),
+          memo: _memoController.text.trim(),
+          isUrgent: _isUrgent,
+        );
+      } else {
+        await HelpPostService.createPost(
+          authorEmail: _currentUser!.email,
+          category: _selectedCategory,
+          title: _titleController.text.trim(),
+          place: _placeController.text.trim(),
+          date: _toApiDate(_selectedDate!),
+          time: _toApiTime(_selectedTime!),
+          memo: _memoController.text.trim(),
+          isUrgent: _isUrgent,
+        );
+      }
+      if (!mounted) return;
+      Navigator.pop(context);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('common.network_error'.tr()),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -146,7 +224,9 @@ class _WritePostScreenState extends State<WritePostScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          _isEditing ? '게시글 수정' : '도움 요청하기',
+          _isEditing
+              ? 'write_post.title_edit'.tr()
+              : 'write_post.title_create'.tr(),
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -164,20 +244,22 @@ class _WritePostScreenState extends State<WritePostScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
           children: [
-            _label('카테고리'),
+            _label('write_post.category'.tr()),
             const SizedBox(height: 8),
             SelectorButton(
-              hint: '카테고리를 선택해주세요',
-              value: _selectedCategory,
+              hint: 'write_post.category_hint'.tr(),
+              value: (_categoryKeys[_selectedCategory] ?? _selectedCategory).tr(),
               onTap: () async {
                 final result = await showModalBottomSheet<String>(
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
                   builder: (_) => SimplePickerSheet(
-                    title: '카테고리',
-                    items: _categories,
+                    title: 'write_post.category'.tr(),
+                    items: _categoryValues,
                     selectedItem: _selectedCategory,
+                    itemLabel: (v) =>
+                        (_categoryKeys[v] ?? v).tr(),
                   ),
                 );
                 if (result != null) setState(() => _selectedCategory = result);
@@ -188,9 +270,9 @@ class _WritePostScreenState extends State<WritePostScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  '긴급',
-                  style: TextStyle(
+                Text(
+                  'write_post.urgent'.tr(),
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
@@ -205,63 +287,76 @@ class _WritePostScreenState extends State<WritePostScreen> {
             ),
             const SizedBox(height: 12),
 
-            _label('제목'),
+            _label('write_post.title_field'.tr()),
             const SizedBox(height: 8),
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(hintText: '제목을 입력해주세요'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? '제목을 입력해주세요' : null,
+              decoration: InputDecoration(
+                  hintText: 'write_post.title_hint'.tr()),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'write_post.title_required'.tr()
+                  : null,
             ),
             const SizedBox(height: 20),
 
-            _label('장소'),
+            _label('write_post.place'.tr()),
             const SizedBox(height: 8),
             TextFormField(
               controller: _placeController,
-              decoration: const InputDecoration(hintText: '장소를 입력해주세요'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? '장소를 입력해주세요' : null,
+              decoration: InputDecoration(
+                  hintText: 'write_post.place_hint'.tr()),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'write_post.place_required'.tr()
+                  : null,
             ),
             const SizedBox(height: 20),
 
-            _label('날짜'),
+            _label('write_post.date'.tr()),
             const SizedBox(height: 8),
             _pickerButton(
               icon: Icons.calendar_today_outlined,
-              text: _formatDate(_selectedDate),
+              text: _formatDateDisplay(_selectedDate),
               isEmpty: _selectedDate == null,
               onTap: _pickDate,
             ),
             const SizedBox(height: 20),
 
-            _label('시간'),
+            _label('write_post.time'.tr()),
             const SizedBox(height: 8),
             _pickerButton(
               icon: Icons.access_time_outlined,
-              text: _formatTime(_selectedTime),
+              text: _formatTimeDisplay(_selectedTime),
               isEmpty: _selectedTime == null,
               onTap: _pickTime,
             ),
             const SizedBox(height: 20),
 
-            _label('메모'),
+            _label('write_post.memo'.tr()),
             const SizedBox(height: 8),
             TextFormField(
               controller: _memoController,
               minLines: 3,
               maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: '도움 요청 내용을 자세히 작성해주세요',
+              decoration: InputDecoration(
+                hintText: 'write_post.memo_hint'.tr(),
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 32),
 
             ElevatedButton(
-              onPressed: _submit,
+              onPressed: _isSubmitting ? null : _submit,
               style: hoverPrimaryButtonStyle(),
-              child: Text(_isEditing ? '수정하기' : '등록하기'),
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(_isEditing
+                      ? 'write_post.update'.tr()
+                      : 'write_post.submit'.tr()),
             ),
           ],
         ),
@@ -269,16 +364,14 @@ class _WritePostScreenState extends State<WritePostScreen> {
     );
   }
 
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.textPrimary,
-      ),
-    );
-  }
+  Widget _label(String text) => Text(
+        text,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.textPrimary,
+        ),
+      );
 
   Widget _pickerButton({
     required IconData icon,
@@ -304,7 +397,9 @@ class _WritePostScreenState extends State<WritePostScreen> {
               text,
               style: TextStyle(
                 fontSize: 14,
-                color: isEmpty ? const Color(0xFFBBBBBB) : AppTheme.textPrimary,
+                color: isEmpty
+                    ? const Color(0xFFBBBBBB)
+                    : AppTheme.textPrimary,
               ),
             ),
           ],
