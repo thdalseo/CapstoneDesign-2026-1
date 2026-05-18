@@ -34,7 +34,25 @@
 
   "chat": {
     "title": "Chat",
-    "input_hint": "Type a message"
+    "input_hint": "Type a message",
+    "empty_title": "No chat rooms yet",
+    "empty_desc": "Press the chat button on a matched\nfriend's profile to start chatting!",
+    "room_start_hint": "Start a conversation",
+    "greeting": "Start a conversation with {name}!",
+    "suggestion_label": "💬 Icebreaking suggestions",
+    "suggestion_desc": "Tap a suggestion below",
+    "connecting": "Connecting...",
+    "connected": "Connected",
+    "conn_error": "Connection error",
+    "offline": "Offline",
+    "suggestions": [
+      "Hello! Nice to meet you 😊",
+      "What language do you want to learn?",
+      "What is your favorite food in Korea?",
+      "What do you usually do on weekends?",
+      "What are your interests?",
+      "How is your school life?"
+    ]
   },
 
   "help": {

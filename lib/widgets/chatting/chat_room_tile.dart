@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../theme/app_theme.dart';
@@ -20,7 +21,7 @@ class ChatRoomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final preview = lastMessage ?? '대화를 시작해보세요';
+    final preview = lastMessage ?? 'chat.room_start_hint'.tr();
 
     return GestureDetector(
       onTap: onTap,

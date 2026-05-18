@@ -34,7 +34,25 @@
 
   "chat": {
     "title": "채팅",
-    "input_hint": "메시지를 입력하세요"
+    "input_hint": "메시지를 입력하세요",
+    "empty_title": "아직 채팅방이 없어요",
+    "empty_desc": "매칭된 친구의 프로필에서\n채팅 버튼을 눌러 대화를 시작해보세요!",
+    "room_start_hint": "대화를 시작해보세요",
+    "greeting": "{name}님과 대화를 시작해보세요!",
+    "suggestion_label": "💬 아이스브레이킹 추천 문구",
+    "suggestion_desc": "아래 추천 문구를 눌러보세요",
+    "connecting": "연결 중...",
+    "connected": "연결됨",
+    "conn_error": "연결 오류",
+    "offline": "오프라인",
+    "suggestions": [
+      "안녕하세요! 만나서 반가워요 😊",
+      "어떤 언어를 배우고 싶으세요?",
+      "한국에서 가장 좋아하는 음식이 뭐예요?",
+      "주말에 보통 뭐 하세요?",
+      "관심사가 뭐예요?",
+      "학교 생활은 어때요?"
+    ]
   },
 
   "help": {
