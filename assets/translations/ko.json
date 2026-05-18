@@ -1,0 +1,109 @@
+{
+  "nav": {
+    "home": "홈",
+    "matching": "매칭",
+    "chat": "채팅",
+    "help": "도움",
+    "my": "마이"
+  },
+
+  "common": {
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "save": "저장",
+    "edit": "수정",
+    "close": "닫기",
+    "network_error": "서버에 연결할 수 없어요.",
+    "login_required": "로그인이 필요해요."
+  },
+
+  "home": {
+    "greeting": "안녕하세요, {name}님! 👋",
+    "subtitle": "당신과 잘 맞는 친구들을 소개할게요.",
+    "profile_incomplete_title": "프로필을 완성해주세요!",
+    "profile_incomplete_desc": "학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.",
+    "go_to_profile": "프로필 설정하러 가기"
+  },
+
+  "matching": {
+    "title": "매칭",
+    "empty_title": "아직 매칭된 친구가 없어요",
+    "empty_desc": "홈에서 퍼즐 버튼을 눌러\n마음에 드는 친구에게 매칭을 신청해보세요!"
+  },
+
+  "chat": {
+    "title": "채팅",
+    "input_hint": "메시지를 입력하세요"
+  },
+
+  "help": {
+    "title": "도움",
+    "tab_all": "전체",
+    "tab_mine": "내 게시글",
+    "post_count": "게시글 {count}개",
+    "sort_recent": "최신순",
+    "sort_urgent": "긴급순",
+    "load_more": "더보기 ({remaining}개 남음)",
+    "empty_title": "게시글이 없어요",
+    "empty_desc": "도움이 필요하다면 글을 작성해보세요!",
+    "cat_all": "전체",
+    "cat_living": "생활",
+    "cat_class": "수업",
+    "cat_language": "언어",
+    "cat_medical": "의료",
+    "cat_campus": "캠퍼스",
+    "cat_admin": "행정",
+    "badge_urgent": "긴급",
+    "badge_complete": "완료",
+    "helper_count": "도움 {count}명",
+    "delete_title": "게시글 삭제",
+    "delete_confirm": "정말 삭제하시겠어요?",
+    "dialog_title": "{name}님의 도움 요청에\n응답할게요",
+    "dialog_content": "채팅을 시작해서 도움을 드려보세요.",
+    "start_chat": "채팅 시작하기",
+    "btn_complete": "완료",
+    "btn_edit": "수정",
+    "btn_delete": "삭제",
+    "btn_help": "도움주기"
+  },
+
+  "write_post": {
+    "title_create": "도움 요청하기",
+    "title_edit": "게시글 수정",
+    "category": "카테고리",
+    "category_hint": "카테고리를 선택해주세요",
+    "urgent": "긴급",
+    "title_field": "제목",
+    "title_hint": "제목을 입력해주세요",
+    "title_required": "제목을 입력해주세요",
+    "place": "장소",
+    "place_hint": "장소를 입력해주세요",
+    "place_required": "장소를 입력해주세요",
+    "date": "날짜",
+    "date_hint": "날짜를 선택해주세요",
+    "time": "시간",
+    "time_hint": "시간을 선택해주세요",
+    "memo": "메모",
+    "memo_hint": "도움 요청 내용을 자세히 작성해주세요",
+    "submit": "등록하기",
+    "update": "수정하기"
+  },
+
+  "mypage": {
+    "title": "마이페이지",
+    "section_profile": "프로필 설정",
+    "edit_profile": "프로필 편집",
+    "section_app": "앱 설정",
+    "language": "언어 변경",
+    "section_account": "계정",
+    "logout": "로그아웃",
+    "logout_title": "로그아웃",
+    "logout_confirm": "정말 로그아웃 하시겠어요?",
+    "delete_account": "회원탈퇴",
+    "delete_account_title": "회원탈퇴",
+    "delete_account_desc": "탈퇴하면 모든 데이터가 삭제되며\n복구할 수 없어요.",
+    "password_hint": "비밀번호 입력",
+    "withdraw": "탈퇴하기"
+  }
+}

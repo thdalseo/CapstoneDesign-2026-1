@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
@@ -23,31 +24,31 @@ class HomeBottomNav extends StatelessWidget {
       selectedFontSize: 11,
       unselectedFontSize: 11,
       elevation: 8,
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: '홈',
+          icon: const Icon(Icons.home_outlined),
+          activeIcon: const Icon(Icons.home),
+          label: 'nav.home'.tr(),
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.extension_outlined),
-          activeIcon: Icon(Icons.extension),
-          label: '매칭',
+          icon: const Icon(Icons.extension_outlined),
+          activeIcon: const Icon(Icons.extension),
+          label: 'nav.matching'.tr(),
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.chat_bubble_outline),
-          activeIcon: Icon(Icons.chat_bubble),
-          label: '채팅',
+          icon: const Icon(Icons.chat_bubble_outline),
+          activeIcon: const Icon(Icons.chat_bubble),
+          label: 'nav.chat'.tr(),
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.volunteer_activism_outlined),
-          activeIcon: Icon(Icons.volunteer_activism),
-          label: '도움',
+          icon: const Icon(Icons.volunteer_activism_outlined),
+          activeIcon: const Icon(Icons.volunteer_activism),
+          label: 'nav.help'.tr(),
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: '마이',
+          icon: const Icon(Icons.person_outline),
+          activeIcon: const Icon(Icons.person),
+          label: 'nav.my'.tr(),
         ),
       ],
     );

@@ -50,12 +50,15 @@ class SimplePickerSheet extends StatelessWidget {
   final String title;
   final List<String> items;
   final String? selectedItem;
+  /// 항목 표시 라벨 변환 함수 (다국어 등). null이면 item 값을 그대로 표시
+  final String Function(String)? itemLabel;
 
   const SimplePickerSheet({
     super.key,
     required this.title,
     required this.items,
     this.selectedItem,
+    this.itemLabel,
   });
 
   @override
@@ -101,7 +104,7 @@ class SimplePickerSheet extends StatelessWidget {
                   final isSelected = item == selectedItem;
                   return ListTile(
                     title: Text(
-                      item,
+                      itemLabel != null ? itemLabel!(item) : item,
                       style: TextStyle(
                         fontSize: 14,
                         color: AppTheme.textPrimary,

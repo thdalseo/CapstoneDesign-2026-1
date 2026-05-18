@@ -1,5 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'theme/app_theme.dart';
@@ -15,16 +15,10 @@ class BridgeApp extends StatelessWidget {
       title: 'Bridge',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      locale: const Locale('ko', 'KR'),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('ko', 'KR'),
-        Locale('en', 'US'),
-      ],
+      // easy_localization이 locale, delegates, supportedLocales를 자동 관리
+      locale: context.locale,
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
       home: isLoggedIn ? const HomeScreen() : const OnboardingScreen(),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
@@ -34,7 +35,7 @@ class _DatePickerSheetState extends State<DatePickerSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHandle(),
-          _buildTitle('날짜 선택'),
+          _buildTitle('write_post.date'.tr()),
           SizedBox(
             height: 220,
             child: CupertinoDatePicker(
@@ -54,7 +55,7 @@ class _DatePickerSheetState extends State<DatePickerSheet> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context, _selected),
               style: hoverPrimaryButtonStyle(),
-              child: const Text('확인'),
+              child: Text('common.confirm'.tr()),
             ),
           ),
         ],
@@ -103,7 +104,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildHandle(),
-          _buildTitle('시간 선택'),
+          _buildTitle('write_post.time'.tr()),
           SizedBox(
             height: 220,
             child: CupertinoDatePicker(
@@ -120,7 +121,7 @@ class _TimePickerSheetState extends State<TimePickerSheet> {
             child: ElevatedButton(
               onPressed: () => Navigator.pop(context, _selected),
               style: hoverPrimaryButtonStyle(),
-              child: const Text('확인'),
+              child: Text('common.confirm'.tr()),
             ),
           ),
         ],

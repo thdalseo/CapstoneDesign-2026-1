@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../theme/app_theme.dart';
@@ -23,8 +24,8 @@ class MatchingScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
           child: Row(
             children: [
-              const Text(
-                '매칭',
+              Text(
+                'matching.title'.tr(),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -98,8 +99,8 @@ class MatchingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '아직 매칭된 친구가 없어요',
+            Text(
+              'matching.empty_title'.tr(),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -107,8 +108,8 @@ class MatchingScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              '홈에서 퍼즐 버튼을 눌러\n마음에 드는 친구에게 매칭을 신청해보세요!',
+            Text(
+              'matching.empty_desc'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,

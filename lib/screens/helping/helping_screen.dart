@@ -1,5 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../models/match_user.dart';
+import '../../models/user_model.dart';
+import '../../services/help_post_service.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/helping/help_card.dart';
 import 'write_post_screen.dart';
@@ -16,59 +21,33 @@ class HelpingScreen extends StatefulWidget {
 class _HelpingScreenState extends State<HelpingScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+
+  // DB 저장값(한국어) 그대로 유지 - 필터링에 사용
+  static const List<String> _categoryValues = [
+    '전체', '생활', '수업', '언어', '의료', '캠퍼스', '행정',
+  ];
+
+  // 카테고리 표시 번역 키 매핑
+  static const Map<String, String> _categoryKeys = {
+    '전체': 'help.cat_all',
+    '생활': 'help.cat_living',
+    '수업': 'help.cat_class',
+    '언어': 'help.cat_language',
+    '의료': 'help.cat_medical',
+    '캠퍼스': 'help.cat_campus',
+    '행정': 'help.cat_admin',
+  };
+
   String _selectedCategory = '전체';
   bool _sortByUrgent = false;
   bool _sortBtnHovered = false;
   bool _fabHovered = false;
   int _displayCount = 10;
+  bool _isLoading = false;
 
-  // TODO: 백엔드 API 연동
-  // GET /api/help-posts       → 게시글 목록 (페이지네이션, 카테고리 필터)
-  // GET /api/help-posts/mine  → 내 게시글 목록
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'id': 1,
-      'category': '언어',
-      'title': '한국어 과제 피드백 부탁드려요!',
-      'authorName': '안나',
-      'major': '경영학과',
-      'timeAgo': '1시간 전',
-      'place': '도서관 1층',
-      'date': '2024년 6월 15일',
-      'time': '오후 2:00',
-      'memo': '한국어 글쓰기 교정/문법 확인이 필요해요.',
-      'helperCount': 2,
-      'isUrgent': false,
-      'isCompleted': false,
-      'isMyPost': false,
-    },
-    {
-      'id': 2,
-      'category': '수업',
-      'title': '코딩 공부 같이해요!',
-      'authorName': '홍길동',
-      'major': '컴퓨터공학과',
-      'timeAgo': '3시간 전',
-      'place': '중앙도서관',
-      'date': '2024년 6월 16일',
-      'time': '오전 10:00',
-      'memo': '시험 준비 같이 할 스터디 구해요.',
-      'helperCount': 1,
-      'isUrgent': true,
-      'isCompleted': false,
-      'isMyPost': true,
-    },
-  ];
-
-  static const List<String> _categories = [
-    '전체',
-    '생활',
-    '수업',
-    '언어',
-    '의료',
-    '캠퍼스',
-    '행정',
-  ];
+  UserModel? _currentUser;
+  List<Map<String, dynamic>> _allPosts = [];
+  List<Map<String, dynamic>> _myPosts = [];
 
   @override
   void initState() {
@@ -78,6 +57,7 @@ class _HelpingScreenState extends State<HelpingScreen>
       if (!_tabController.indexIsChanging) return;
       setState(() => _displayCount = 10);
     });
+    _init();
   }
 
   @override
@@ -86,15 +66,89 @@ class _HelpingScreenState extends State<HelpingScreen>
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _filteredPosts {
-    List<Map<String, dynamic>> posts = _tabController.index == 0
-        ? List.from(_posts)
-        : _posts.where((p) => p['isMyPost'] == true).toList();
+  Future<void> _init() async {
+    final user = await UserService.loadUser();
+    if (mounted) setState(() => _currentUser = user);
+    await _loadPosts();
+  }
 
+  Future<void> _loadPosts() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final allRaw = await HelpPostService.fetchPosts();
+      final myRaw = _currentUser != null
+          ? await HelpPostService.fetchMyPosts(_currentUser!.email)
+          : <Map<String, dynamic>>[];
+
+      if (mounted) {
+        setState(() {
+          _allPosts = allRaw.map((p) => _enrichPost(p)).toList();
+          _myPosts = myRaw.map((p) => _enrichPost(p)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnack(e is ApiException ? e.message : 'common.network_error'.tr());
+      }
+    }
+  }
+
+  Map<String, dynamic> _enrichPost(Map<String, dynamic> post) {
+    final authorId = post['author_id']?.toString() ?? '';
+    final isMyPost = _currentUser != null && authorId == _currentUser!.id;
+    return {
+      ...post,
+      'isMyPost': isMyPost,
+      'timeAgo': _timeAgo(post['createdAt'] as String?),
+      'date': _formatDateDisplay(post['date'] as String?),
+      'time': _formatTimeDisplay(post['time'] as String?),
+      'rawDate': post['date'],
+      'rawTime': post['time'],
+    };
+  }
+
+  String _timeAgo(String? createdAt) {
+    if (createdAt == null) return '';
+    try {
+      final dt = DateTime.parse(createdAt).toLocal();
+      final diff = DateTime.now().difference(dt);
+      if (diff.inMinutes < 1) return '방금 전';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}분 전';
+      if (diff.inHours < 24) return '${diff.inHours}시간 전';
+      return '${diff.inDays}일 전';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _formatDateDisplay(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '';
+    final parts = dateStr.split('-');
+    if (parts.length != 3) return dateStr;
+    return '${parts[0]}년 ${int.tryParse(parts[1])}월 ${int.tryParse(parts[2])}일';
+  }
+
+  String _formatTimeDisplay(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) return '';
+    final parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final period = hour < 12 ? '오전' : '오후';
+    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$period $displayHour:${minute.toString().padLeft(2, '0')}';
+  }
+
+  List<Map<String, dynamic>> get _filteredPosts {
+    List<Map<String, dynamic>> posts = List.from(
+      _tabController.index == 0 ? _allPosts : _myPosts,
+    );
     if (_selectedCategory != '전체') {
       posts = posts.where((p) => p['category'] == _selectedCategory).toList();
     }
-
     if (_sortByUrgent) {
       posts.sort((a, b) {
         final aU = a['isUrgent'] as bool? ?? false;
@@ -104,27 +158,17 @@ class _HelpingScreenState extends State<HelpingScreen>
         return 0;
       });
     }
-
     return posts;
   }
 
   Future<void> _openWritePost({Map<String, dynamic>? initialData}) async {
-    final result = await Navigator.push<Map<String, dynamic>>(
+    await Navigator.push<void>(
       context,
       MaterialPageRoute(
         builder: (_) => WritePostScreen(initialData: initialData),
       ),
     );
-    if (result == null) return;
-
-    setState(() {
-      if (initialData != null) {
-        final idx = _posts.indexWhere((p) => p['id'] == result['id']);
-        if (idx != -1) _posts[idx] = result;
-      } else {
-        _posts.insert(0, result);
-      }
-    });
+    await _loadPosts();
   }
 
   void _deletePost(int id) {
@@ -132,37 +176,42 @@ class _HelpingScreenState extends State<HelpingScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('게시글 삭제',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        content: const Text('정말 삭제하시겠어요?'),
+        title: Text('help.delete_title'.tr(),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        content: Text('help.delete_confirm'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소'),
+            child: Text('common.cancel'.tr()),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              setState(() => _posts.removeWhere((p) => p['id'] == id));
-              // TODO: DELETE /api/help-posts/{id}
+              try {
+                await HelpPostService.deletePost(id);
+                await _loadPosts();
+              } catch (e) {
+                _showSnack(e is ApiException
+                    ? e.message
+                    : 'common.network_error'.tr());
+              }
             },
-            child: const Text('삭제',
-                style: TextStyle(color: Color(0xFFEF4444))),
+            child: Text('common.delete'.tr(),
+                style: const TextStyle(color: Color(0xFFEF4444))),
           ),
         ],
       ),
     );
   }
 
-  void _completePost(int id) {
-    setState(() {
-      final idx = _posts.indexWhere((p) => p['id'] == id);
-      if (idx != -1) {
-        _posts[idx] = Map<String, dynamic>.from(_posts[idx])
-          ..['isCompleted'] = true;
-      }
-    });
-    // TODO: PATCH /api/help-posts/{id}/complete
+  Future<void> _completePost(int id) async {
+    try {
+      await HelpPostService.completePost(id);
+      await _loadPosts();
+    } catch (e) {
+      _showSnack(
+          e is ApiException ? e.message : 'common.network_error'.tr());
+    }
   }
 
   void _showHelpDialog(Map<String, dynamic> post) {
@@ -171,18 +220,34 @@ class _HelpingScreenState extends State<HelpingScreen>
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          '${post['authorName']}님의 도움 요청에\n응답할게요',
+          'help.dialog_title'
+              .tr(namedArgs: {'name': post['authorName'] as String? ?? ''}),
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
-        content: const Text('채팅을 시작해서 도움을 드려보세요.'),
+        content: Text('help.dialog_content'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('취소', style: TextStyle(color: AppTheme.textSecondary)),
+            child: Text('common.cancel'.tr(),
+                style: const TextStyle(color: AppTheme.textSecondary)),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              if (_currentUser != null) {
+                try {
+                  await HelpPostService.applyHelp(
+                    post['id'] as int,
+                    _currentUser!.email,
+                  );
+                  await _loadPosts();
+                } on ApiException catch (e) {
+                  if (e.statusCode != 409) {
+                    _showSnack(e.message);
+                    return;
+                  }
+                } catch (_) {}
+              }
 
               final systemMessage = '🤝 함께해요!\n'
                   '📌 카테고리: ${post['category']}\n'
@@ -202,13 +267,24 @@ class _HelpingScreenState extends State<HelpingScreen>
                 matchPercent: 100,
               );
 
-              // TODO: POST /api/chats          → 채팅방 생성
-              // TODO: POST /api/messages/system → 시스템 메시지 전송
               widget.onStartChat(user, systemMessage);
             },
-            child: const Text('채팅 시작하기', style: TextStyle(color: AppTheme.primary)),
+            child: Text('help.start_chat'.tr(),
+                style: const TextStyle(color: AppTheme.primary)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -228,11 +304,11 @@ class _HelpingScreenState extends State<HelpingScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: Text(
-                  '도움',
-                  style: TextStyle(
+                  'help.title'.tr(),
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textPrimary,
@@ -249,7 +325,10 @@ class _HelpingScreenState extends State<HelpingScreen>
                     fontSize: 14, fontWeight: FontWeight.w500),
                 indicatorColor: AppTheme.primary,
                 indicatorWeight: 2.5,
-                tabs: const [Tab(text: '전체'), Tab(text: '내 게시글')],
+                tabs: [
+                  Tab(text: 'help.tab_all'.tr()),
+                  Tab(text: 'help.tab_mine'.tr()),
+                ],
               ),
             ],
           ),
@@ -262,10 +341,10 @@ class _HelpingScreenState extends State<HelpingScreen>
             scrollDirection: Axis.horizontal,
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: _categories.length,
+            itemCount: _categoryValues.length,
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
-              final cat = _categories[i];
+              final cat = _categoryValues[i];
               final selected = _selectedCategory == cat;
               return GestureDetector(
                 onTap: () => setState(() {
@@ -284,13 +363,11 @@ class _HelpingScreenState extends State<HelpingScreen>
                     ),
                   ),
                   child: Text(
-                    cat,
+                    (_categoryKeys[cat] ?? cat).tr(),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: selected
-                          ? Colors.white
-                          : AppTheme.textSecondary,
+                      color: selected ? Colors.white : AppTheme.textSecondary,
                     ),
                   ),
                 ),
@@ -305,7 +382,8 @@ class _HelpingScreenState extends State<HelpingScreen>
           child: Row(
             children: [
               Text(
-                '게시글 ${filtered.length}개',
+                'help.post_count'
+                    .tr(namedArgs: {'count': '${filtered.length}'}),
                 style: const TextStyle(
                     fontSize: 12, color: AppTheme.textSecondary),
               ),
@@ -341,7 +419,9 @@ class _HelpingScreenState extends State<HelpingScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          _sortByUrgent ? '긴급순' : '최신순',
+                          _sortByUrgent
+                              ? 'help.sort_urgent'.tr()
+                              : 'help.sort_recent'.tr(),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -363,40 +443,35 @@ class _HelpingScreenState extends State<HelpingScreen>
         Expanded(
           child: Stack(
             children: [
-              displayed.isEmpty
-                  ? _buildEmpty()
-                  : ListView.builder(
-                      padding:
-                          const EdgeInsets.only(top: 4, bottom: 88),
-                      itemCount: displayed.length + (hasMore ? 1 : 0),
-                      itemBuilder: (context, i) {
-                        if (i == displayed.length) {
-                          return _buildLoadMore(
-                              filtered.length - _displayCount);
-                        }
-                        final post = displayed[i];
-                        final isMyPost =
-                            post['isMyPost'] as bool? ?? false;
-                        return HelpCard(
-                          post: post,
-                          onEdit: isMyPost
-                              ? () =>
-                                  _openWritePost(initialData: post)
-                              : null,
-                          onDelete: isMyPost
-                              ? () =>
-                                  _deletePost(post['id'] as int)
-                              : null,
-                          onComplete: isMyPost
-                              ? () =>
-                                  _completePost(post['id'] as int)
-                              : null,
-                          onHelp: !isMyPost
-                              ? () => _showHelpDialog(post)
-                              : null,
-                        );
-                      },
-                    ),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (displayed.isEmpty)
+                _buildEmpty()
+              else
+                ListView.builder(
+                  padding: const EdgeInsets.only(top: 4, bottom: 88),
+                  itemCount: displayed.length + (hasMore ? 1 : 0),
+                  itemBuilder: (context, i) {
+                    if (i == displayed.length) {
+                      return _buildLoadMore(filtered.length - _displayCount);
+                    }
+                    final post = displayed[i];
+                    final isMyPost = post['isMyPost'] as bool? ?? false;
+                    return HelpCard(
+                      post: post,
+                      onEdit: isMyPost
+                          ? () => _openWritePost(initialData: post)
+                          : null,
+                      onDelete: isMyPost
+                          ? () => _deletePost(post['id'] as int)
+                          : null,
+                      onComplete: isMyPost
+                          ? () => _completePost(post['id'] as int)
+                          : null,
+                      onHelp: !isMyPost ? () => _showHelpDialog(post) : null,
+                    );
+                  },
+                ),
 
               // 글쓰기 FAB
               Positioned(
@@ -417,8 +492,8 @@ class _HelpingScreenState extends State<HelpingScreen>
                         color: AppTheme.primary,
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary
-                                .withValues(alpha: _fabHovered ? 0.45 : 0.25),
+                            color: AppTheme.primary.withValues(
+                                alpha: _fabHovered ? 0.45 : 0.25),
                             blurRadius: _fabHovered ? 14 : 6,
                             offset: const Offset(0, 4),
                           ),
@@ -448,13 +523,14 @@ class _HelpingScreenState extends State<HelpingScreen>
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(double.infinity, 44),
           side: const BorderSide(color: AppTheme.border),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
           backgroundColor: Colors.transparent,
           overlayColor: AppTheme.textSecondary,
         ),
         child: Text(
-          '더보기 ($remaining개 남음)',
+          'help.load_more'
+              .tr(namedArgs: {'remaining': '$remaining'}),
           style: const TextStyle(
               fontSize: 14, color: AppTheme.textSecondary),
         ),
@@ -478,18 +554,19 @@ class _HelpingScreenState extends State<HelpingScreen>
                 color: AppTheme.primary, size: 32),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '게시글이 없어요',
-            style: TextStyle(
+          Text(
+            'help.empty_title'.tr(),
+            style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            '도움이 필요하다면 글을 작성해보세요!',
-            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          Text(
+            'help.empty_desc'.tr(),
+            style: const TextStyle(
+                fontSize: 13, color: AppTheme.textSecondary),
           ),
         ],
       ),

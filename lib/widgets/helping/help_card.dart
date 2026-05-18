@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
@@ -31,6 +32,17 @@ class _HelpCardState extends State<HelpCard> {
     '언어': Color(0xFFEF4444),
     '한국어': Color(0xFFEF4444),
     '캠퍼스': Color(0xFFF59E0B),
+    '의료': Color(0xFFEC4899),
+  };
+
+  // DB 값(한국어) → 번역 키
+  static const Map<String, String> _categoryKeys = {
+    '생활': 'help.cat_living',
+    '수업': 'help.cat_class',
+    '언어': 'help.cat_language',
+    '의료': 'help.cat_medical',
+    '캠퍼스': 'help.cat_campus',
+    '행정': 'help.cat_admin',
   };
 
   @override
@@ -43,6 +55,8 @@ class _HelpCardState extends State<HelpCard> {
     final Color catColor =
         _categoryColors[category] ?? AppTheme.textSecondary;
     final String memo = widget.post['memo'] as String? ?? '';
+    final String categoryLabel =
+        (_categoryKeys[category] ?? category).tr();
 
     return Opacity(
       opacity: isCompleted ? 0.6 : 1.0,
@@ -63,14 +77,16 @@ class _HelpCardState extends State<HelpCard> {
                 // 상단 배지 + 도움 명수
                 Row(
                   children: [
-                    _badge(category, catColor),
+                    _badge(categoryLabel, catColor),
                     if (isUrgent) ...[
                       const SizedBox(width: 6),
-                      _badge('긴급', const Color(0xFFEF4444)),
+                      _badge('help.badge_urgent'.tr(),
+                          const Color(0xFFEF4444)),
                     ],
                     if (isCompleted) ...[
                       const SizedBox(width: 6),
-                      _badge('완료', AppTheme.textSecondary),
+                      _badge('help.badge_complete'.tr(),
+                          AppTheme.textSecondary),
                     ],
                     const Spacer(),
                     if (helperCount > 0)
@@ -78,11 +94,13 @@ class _HelpCardState extends State<HelpCard> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          color:
+                              AppTheme.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          '도움 $helperCount명',
+                          'help.helper_count'.tr(
+                              namedArgs: {'count': '$helperCount'}),
                           style: const TextStyle(
                             fontSize: 11,
                             color: AppTheme.primary,
@@ -195,17 +213,17 @@ class _HelpCardState extends State<HelpCard> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 if (isMyPost && !isCompleted) ...[
-                                  _actionBtn('완료', AppTheme.mint,
-                                      widget.onComplete),
+                                  _actionBtn('help.btn_complete'.tr(),
+                                      AppTheme.mint, widget.onComplete),
                                   const SizedBox(width: 8),
-                                  _actionBtn('수정', AppTheme.primary,
-                                      widget.onEdit),
+                                  _actionBtn('help.btn_edit'.tr(),
+                                      AppTheme.primary, widget.onEdit),
                                   const SizedBox(width: 8),
-                                  _actionBtn('삭제', AppTheme.coral,
-                                      widget.onDelete),
+                                  _actionBtn('help.btn_delete'.tr(),
+                                      AppTheme.coral, widget.onDelete),
                                 ] else if (!isMyPost && !isCompleted) ...[
-                                  _actionBtn(
-                                      '도움주기', AppTheme.mint, widget.onHelp),
+                                  _actionBtn('help.btn_help'.tr(),
+                                      AppTheme.mint, widget.onHelp),
                                 ],
                               ],
                             ),
@@ -246,8 +264,8 @@ class _HelpCardState extends State<HelpCard> {
         const SizedBox(width: 4),
         Text(
           text,
-          style:
-              const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          style: const TextStyle(
+              fontSize: 12, color: AppTheme.textSecondary),
         ),
       ],
     );
@@ -293,7 +311,8 @@ class _HoverActionBtnState extends State<_HoverActionBtn> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: widget.color.withValues(alpha: _hovered ? 0.5 : 0.35),
+              color:
+                  widget.color.withValues(alpha: _hovered ? 0.5 : 0.35),
             ),
           ),
           child: Text(
