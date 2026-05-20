@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../constants/profile_labels.dart';
 import '../../models/match_user.dart';
+import '../../services/translation_service.dart';
 import '../../theme/app_theme.dart';
 
 // 관심사 태그에 순서대로 적용할 색상
@@ -12,25 +14,6 @@ const _kTagColors = [
   Color(0xFFEF4444),
   Color(0xFFEC4899),
 ];
-
-// 관심사 한→영 번역 맵
-const _kInterestLabelsEn = {
-  '여행': 'Travel',
-  '카페 탐방': 'Cafes',
-  '영화': 'Movies',
-  '음악': 'Music',
-  '운동': 'Exercise',
-  'K-POP': 'K-POP',
-  '요리': 'Cooking',
-  '사진': 'Photography',
-  '독서': 'Reading',
-  '게임': 'Gaming',
-  '드라마': 'Drama',
-  '패션': 'Fashion',
-  '뷰티': 'Beauty',
-  '스포츠': 'Sports',
-  '언어': 'Language',
-};
 
 class MatchCard extends StatefulWidget {
   final MatchUser user;
@@ -196,7 +179,7 @@ class _Header extends StatelessWidget {
 
 // ── 바디 ──────────────────────────────────────────────────────────────────────
 
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   final MatchUser user;
   final bool isMatched;
   final bool matchHovered;
@@ -222,10 +205,46 @@ class _Body extends StatelessWidget {
   });
 
   @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  bool _isTranslating = false;
+  String? _translatedDesc;
+  bool _showTranslation = false;
+
+  Future<void> _onTranslateTap() async {
+    if (_showTranslation) {
+      setState(() => _showTranslation = false);
+      return;
+    }
+    if (_translatedDesc != null) {
+      setState(() => _showTranslation = true);
+      return;
+    }
+    setState(() => _isTranslating = true);
+    try {
+      final targetLang = context.locale.languageCode;
+      final result = await TranslationService.translate(
+        widget.user.description,
+        targetLang: targetLang,
+      );
+      if (mounted) {
+        setState(() {
+          _translatedDesc = result;
+          _showTranslation = true;
+          _isTranslating = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isTranslating = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isEn = context.locale.languageCode == 'en';
-    String interestLabel(String item) =>
-        isEn ? (_kInterestLabelsEn[item] ?? item) : item;
+    final locale = context.locale.languageCode;
+    final interestLabel = interestLabelOf(locale);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
@@ -237,7 +256,7 @@ class _Body extends StatelessWidget {
             spacing: 7,
             runSpacing: 7,
             children:
-                user.interests.take(3).toList().asMap().entries.map((e) {
+                widget.user.interests.take(3).toList().asMap().entries.map((e) {
               final color = _kTagColors[e.key % _kTagColors.length];
               return Container(
                 padding: const EdgeInsets.symmetric(
@@ -263,20 +282,97 @@ class _Body extends StatelessWidget {
 
           // 자기소개
           Expanded(
-            child: Text(
-              user.description,
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: AppTheme.textPrimary,
-                height: 1.7,
-              ),
-              overflow: TextOverflow.fade,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.user.description,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: AppTheme.textPrimary,
+                    height: 1.7,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (_showTranslation && _translatedDesc != null) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4FF),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.translate_rounded,
+                            size: 12, color: AppTheme.primary),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            _translatedDesc!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppTheme.textPrimary,
+                              height: 1.45,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(height: 14),
+          // 번역 버튼 (Expanded 밖)
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: _isTranslating ? null : _onTranslateTap,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isTranslating)
+                  const SizedBox(
+                    width: 11,
+                    height: 11,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 1.5, color: AppTheme.primary),
+                  )
+                else
+                  Icon(Icons.translate_rounded,
+                      size: 12,
+                      color: _showTranslation
+                          ? AppTheme.primary
+                          : AppTheme.textSecondary),
+                const SizedBox(width: 3),
+                Text(
+                  _isTranslating
+                      ? 'chat.translating'.tr()
+                      : _showTranslation
+                          ? 'chat.hide_post_translation'.tr()
+                          : 'chat.translate_post'.tr(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _showTranslation
+                        ? AppTheme.primary
+                        : AppTheme.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
 
           // 버튼 영역
-          if (onChatTap != null)
+          if (widget.onChatTap != null)
             Row(
               children: [
                 Expanded(child: _chatButton(context)),
@@ -292,13 +388,13 @@ class _Body extends StatelessWidget {
   }
 
   Widget _matchFullButton(BuildContext context) {
-    final active = isMatched || matchHovered;
+    final active = widget.isMatched || widget.matchHovered;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => onMatchEnter?.call(),
-      onExit: (_) => onMatchExit?.call(),
+      onEnter: (_) => widget.onMatchEnter?.call(),
+      onExit: (_) => widget.onMatchExit?.call(),
       child: GestureDetector(
-        onTap: onMatchTap,
+        onTap: widget.onMatchTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           height: 46,
@@ -322,13 +418,13 @@ class _Body extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                isMatched ? Icons.extension : Icons.extension_outlined,
+                widget.isMatched ? Icons.extension : Icons.extension_outlined,
                 size: 18,
                 color: active ? Colors.white : AppTheme.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
-                isMatched
+                widget.isMatched
                     ? 'match_card.matched'.tr()
                     : 'match_card.match'.tr(),
                 style: TextStyle(
@@ -347,20 +443,20 @@ class _Body extends StatelessWidget {
   Widget _chatButton(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => onChatEnter?.call(),
-      onExit: (_) => onChatExit?.call(),
+      onEnter: (_) => widget.onChatEnter?.call(),
+      onExit: (_) => widget.onChatExit?.call(),
       child: GestureDetector(
-        onTap: onChatTap,
+        onTap: widget.onChatTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           height: 46,
           decoration: BoxDecoration(
-            color: chatHovered ? AppTheme.primary : Colors.transparent,
+            color: widget.chatHovered ? AppTheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: chatHovered ? AppTheme.primary : AppTheme.border,
+              color: widget.chatHovered ? AppTheme.primary : AppTheme.border,
             ),
-            boxShadow: chatHovered
+            boxShadow: widget.chatHovered
                 ? [
                     BoxShadow(
                       color: AppTheme.primary.withValues(alpha: 0.25),
@@ -374,11 +470,11 @@ class _Body extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                chatHovered
+                widget.chatHovered
                     ? Icons.chat_bubble_rounded
                     : Icons.chat_bubble_outline_rounded,
                 size: 17,
-                color: chatHovered ? Colors.white : AppTheme.textSecondary,
+                color: widget.chatHovered ? Colors.white : AppTheme.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -386,8 +482,7 @@ class _Body extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color:
-                      chatHovered ? Colors.white : AppTheme.textSecondary,
+                  color: widget.chatHovered ? Colors.white : AppTheme.textSecondary,
                 ),
               ),
             ],
@@ -398,13 +493,13 @@ class _Body extends StatelessWidget {
   }
 
   Widget _matchIconButton(BuildContext context) {
-    final active = isMatched || matchHovered;
+    final active = widget.isMatched || widget.matchHovered;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => onMatchEnter?.call(),
-      onExit: (_) => onMatchExit?.call(),
+      onEnter: (_) => widget.onMatchEnter?.call(),
+      onExit: (_) => widget.onMatchExit?.call(),
       child: GestureDetector(
-        onTap: onMatchTap,
+        onTap: widget.onMatchTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           width: 46,
@@ -419,7 +514,7 @@ class _Body extends StatelessWidget {
             ),
           ),
           child: Icon(
-            isMatched ? Icons.extension : Icons.extension_outlined,
+            widget.isMatched ? Icons.extension : Icons.extension_outlined,
             size: 20,
             color: active ? AppTheme.primary : AppTheme.textSecondary,
           ),

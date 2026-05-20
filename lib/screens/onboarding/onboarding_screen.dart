@@ -15,6 +15,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FocusNode _passwordFocus = FocusNode();
   bool _isLoading = false;
   bool _isHoveringSignup = false;
 
@@ -22,6 +23,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void dispose() {
     _idController.dispose();
     _passwordController.dispose();
+    _passwordFocus.dispose();
     super.dispose();
   }
 
@@ -98,12 +100,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       TextField(
                         controller: _idController,
                         keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => _passwordFocus.requestFocus(),
                         decoration: const InputDecoration(hintText: '이메일 (아이디)'),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _passwordController,
+                        focusNode: _passwordFocus,
                         obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _isLoading ? null : _login(),
                         decoration: const InputDecoration(hintText: '비밀번호'),
                       ),
                       const SizedBox(height: 20),

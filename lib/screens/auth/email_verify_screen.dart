@@ -262,7 +262,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
                 ),
               const SizedBox(height: 32),
               SizedBox(
-                width: 314, height: 46,
+                width: double.infinity, height: 46,
                 child: MouseRegion(
                   cursor: (_isFilled && !_isExpired)
                       ? SystemMouseCursors.click

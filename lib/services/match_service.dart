@@ -68,9 +68,11 @@ class MatchService {
 
   // ── 샘플 데이터 (seed_data.py 와 동일한 유저) ────────────────────────────────
 
+  // id 는 seed_data.py 가 삽입한 DB 실제 id 와 일치해야 채팅방이 올바르게 생성됨.
+  // sms0424=1, Sofia=2, Liam=3, Amara=4, Yuki=5, Marco=6
   static const List<MatchUser> _mockMatches = [
     MatchUser(
-      id: '1',
+      id: '2',
       name: 'Sofia',
       country: '🇺🇸',
       major: '경영학과',
@@ -80,7 +82,7 @@ class MatchService {
       matchPercent: 92,
     ),
     MatchUser(
-      id: '2',
+      id: '3',
       name: 'Liam',
       country: '🇬🇧',
       major: '컴퓨터공학과',
@@ -90,7 +92,7 @@ class MatchService {
       matchPercent: 87,
     ),
     MatchUser(
-      id: '3',
+      id: '4',
       name: 'Amara',
       country: '🇳🇬',
       major: '국제학부',
@@ -100,7 +102,7 @@ class MatchService {
       matchPercent: 81,
     ),
     MatchUser(
-      id: '4',
+      id: '5',
       name: 'Yuki',
       country: '🇯🇵',
       major: '일어일문학과',
@@ -110,7 +112,7 @@ class MatchService {
       matchPercent: 76,
     ),
     MatchUser(
-      id: '5',
+      id: '6',
       name: 'Marco',
       country: '🇮🇹',
       major: '체육교육과',

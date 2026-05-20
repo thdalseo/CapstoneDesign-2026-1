@@ -28,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   late final PageController _pageController;
   UserModel? _currentUser;
   final List<MatchUser> _matchedUsers = [];   // 매칭 목록 (퍼즐 버튼)
-  final List<MatchUser> _chattingUsers = [];  // 채팅 목록 (채팅 버튼)
   List<MatchUser> _matchList = [];
   bool _loadingMatches = false;
 
@@ -73,11 +72,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  /// 채팅 시작 — 채팅 목록에만 추가하고 채팅방으로 이동
+  /// 채팅 시작 — 채팅방으로 이동 (채팅 목록은 서버에서 자동 관리)
   void _startChat(MatchUser user, {String? initialMessage}) {
-    if (!_chattingUsers.any((u) => u.name == user.name)) {
-      setState(() => _chattingUsers.add(user));
-    }
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -190,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onStartChat: (user) => _startChat(user),
         );
       case 2:
-        return ChattingScreen(users: _chattingUsers);
+        return const ChattingScreen();
       case 3:
         return HelpingScreen(
           onStartChat: (user, systemMessage) =>

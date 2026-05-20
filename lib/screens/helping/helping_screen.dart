@@ -258,7 +258,8 @@ class _HelpingScreenState extends State<HelpingScreen>
                   '자유롭게 대화를 시작해보세요!';
 
               final user = MatchUser(
-                name: post['authorName'] as String,
+                id: post['author_id']?.toString() ?? '',
+                name: post['authorName'] as String? ?? '',
                 country: '🤝',
                 major: post['major'] as String? ?? '',
                 year: '',

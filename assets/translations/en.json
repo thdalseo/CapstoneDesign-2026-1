@@ -47,6 +47,11 @@
     "connected": "Connected",
     "conn_error": "Connection error",
     "offline": "Offline",
+    "translate": "Translate",
+    "hide_translation": "Hide",
+    "translating": "Translating...",
+    "translate_post": "Translate",
+    "hide_post_translation": "Hide",
     "suggestions": [
       "Hello! Nice to meet you 😊",
       "What language do you want to learn?",

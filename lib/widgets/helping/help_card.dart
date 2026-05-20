@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../services/translation_service.dart';
 import '../../theme/app_theme.dart';
 
 class HelpCard extends StatefulWidget {
@@ -24,6 +25,10 @@ class HelpCard extends StatefulWidget {
 
 class _HelpCardState extends State<HelpCard> {
   bool _expanded = false;
+  bool _isTranslating = false;
+  String? _translatedTitle;
+  String? _translatedMemo;
+  bool _showTranslation = false;
 
   static const Map<String, Color> _categoryColors = {
     '수업': Color(0xFF4C80AF),
@@ -129,6 +134,93 @@ class _HelpCardState extends State<HelpCard> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
+                const SizedBox(height: 4),
+                // 번역 버튼
+                GestureDetector(
+                  onTap: _isTranslating ? null : _onTranslateTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isTranslating)
+                        const SizedBox(
+                          width: 10,
+                          height: 10,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 1.5, color: AppTheme.primary),
+                        )
+                      else
+                        Icon(Icons.translate_rounded,
+                            size: 11,
+                            color: _showTranslation
+                                ? AppTheme.primary
+                                : AppTheme.textSecondary),
+                      const SizedBox(width: 3),
+                      Text(
+                        _isTranslating
+                            ? 'chat.translating'.tr()
+                            : _showTranslation
+                                ? 'chat.hide_post_translation'.tr()
+                                : 'chat.translate_post'.tr(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _showTranslation
+                              ? AppTheme.primary
+                              : AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 번역 결과
+                if (_showTranslation && _translatedTitle != null) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4FF),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.translate_rounded,
+                                size: 11, color: AppTheme.primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _translatedTitle!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppTheme.textPrimary,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_translatedMemo != null &&
+                            _translatedMemo!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            _translatedMemo!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
 
                 // 작성자
@@ -209,16 +301,16 @@ class _HelpCardState extends State<HelpCard> {
                               ),
                             ],
                             const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                            Wrap(
+                              alignment: WrapAlignment.end,
+                              spacing: 8,
+                              runSpacing: 6,
                               children: [
                                 if (isMyPost && !isCompleted) ...[
                                   _actionBtn('help.btn_complete'.tr(),
                                       AppTheme.mint, widget.onComplete),
-                                  const SizedBox(width: 8),
                                   _actionBtn('help.btn_edit'.tr(),
                                       AppTheme.primary, widget.onEdit),
-                                  const SizedBox(width: 8),
                                   _actionBtn('help.btn_delete'.tr(),
                                       AppTheme.coral, widget.onDelete),
                                 ] else if (!isMyPost && !isCompleted) ...[
@@ -237,6 +329,40 @@ class _HelpCardState extends State<HelpCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _onTranslateTap() async {
+    if (_showTranslation) {
+      setState(() => _showTranslation = false);
+      return;
+    }
+    if (_translatedTitle != null) {
+      setState(() => _showTranslation = true);
+      return;
+    }
+    setState(() => _isTranslating = true);
+    try {
+      final targetLang = context.locale.languageCode;
+      final title = widget.post['title'] as String? ?? '';
+      final memo = widget.post['memo'] as String? ?? '';
+      final translatedTitle = await TranslationService.translate(
+        title,
+        targetLang: targetLang,
+      );
+      final translatedMemo = memo.isNotEmpty
+          ? await TranslationService.translate(memo, targetLang: targetLang)
+          : '';
+      if (mounted) {
+        setState(() {
+          _translatedTitle = translatedTitle;
+          _translatedMemo = translatedMemo;
+          _showTranslation = true;
+          _isTranslating = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isTranslating = false);
+    }
   }
 
   Widget _badge(String label, Color color) {
