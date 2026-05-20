@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import List, Optional
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,7 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.email_verifier import send_verification_email
-from app.models.user import EmailVerification, User
+from app.models.user import (
+    EmailVerification,
+    User,
+    UserInterest,
+    UserExchangePurpose,
+    UserLanguage,
+    UserPersonality,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -67,6 +75,17 @@ class LoginRequest(BaseModel):
 class DeleteAccountRequest(BaseModel):
     email: str
     password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    email: str
+    year: Optional[str] = None
+    description: Optional[str] = None
+    avatar_url: Optional[str] = None
+    interests: Optional[List[str]] = None
+    exchange_purposes: Optional[List[str]] = None
+    personalities: Optional[List[str]] = None
+    languages: Optional[List[str]] = None
 
 
 # ── endpoints ─────────────────────────────────────────────────────────────────
@@ -151,3 +170,59 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="이메일 인증이 필요합니다.")
 
     return {"message": "로그인 성공", "user": _user_dict(user)}
+
+
+@router.get("/profile")
+def get_profile(email: str, db: Session = Depends(get_db)):
+    """이메일로 프로필 조회 — 앱 시작 시 최신 데이터 동기화용"""
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    return {"user": _user_dict(user)}
+
+
+@router.patch("/profile")
+def update_profile(req: UpdateProfileRequest, db: Session = Depends(get_db)):
+    """프로필 편집 내용을 DB에 저장"""
+    user = db.query(User).filter(User.email == req.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    # 단순 필드
+    if req.year is not None:
+        user.year = req.year
+    if req.description is not None:
+        user.description = req.description
+    # avatar_url은 로컬 파일 경로일 수 있으므로 http URL일 때만 저장
+    if req.avatar_url is not None and req.avatar_url.startswith("http"):
+        user.avatar_url = req.avatar_url
+
+    # 관심사 (전체 교체)
+    if req.interests is not None:
+        db.query(UserInterest).filter(UserInterest.user_id == user.id).delete()
+        for item in req.interests:
+            db.add(UserInterest(user_id=user.id, interest=item))
+
+    # 교류 목적 (전체 교체)
+    if req.exchange_purposes is not None:
+        db.query(UserExchangePurpose).filter(UserExchangePurpose.user_id == user.id).delete()
+        valid_purposes = {"언어교환", "학업도움", "친구사귀기", "문화교류"}
+        for item in req.exchange_purposes:
+            if item in valid_purposes:
+                db.add(UserExchangePurpose(user_id=user.id, purpose=item))
+
+    # 성향 (전체 교체)
+    if req.personalities is not None:
+        db.query(UserPersonality).filter(UserPersonality.user_id == user.id).delete()
+        for item in req.personalities:
+            db.add(UserPersonality(user_id=user.id, personality=item))
+
+    # 언어 (전체 교체)
+    if req.languages is not None:
+        db.query(UserLanguage).filter(UserLanguage.user_id == user.id).delete()
+        for item in req.languages:
+            db.add(UserLanguage(user_id=user.id, language=item))
+
+    db.commit()
+    db.refresh(user)
+    return {"message": "프로필이 업데이트되었습니다.", "user": _user_dict(user)}

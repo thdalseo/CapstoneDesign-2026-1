@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'hover_button.dart';
@@ -81,10 +82,13 @@ class CustomChipInput extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            HoverButton(
-              label: '추가',
-              onPressed: onAdd,
-              color: AppTheme.primary,
+            ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 64),
+              child: HoverButton(
+                label: 'edit_profile.add'.tr(),
+                onPressed: onAdd,
+                color: AppTheme.primary,
+              ),
             ),
           ],
         ),

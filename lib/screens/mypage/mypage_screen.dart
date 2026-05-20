@@ -10,6 +10,7 @@ import '../../widgets/mypage/mypage_section.dart';
 import '../../widgets/mypage/mypage_menu_item.dart';
 import '../onboarding/onboarding_screen.dart';
 import 'edit_profile_screen.dart';
+import 'match_weight_screen.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -68,6 +69,20 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       ),
                     );
                     _loadUser();
+                  },
+                ),
+                MyPageMenuItem(
+                  icon: Icons.tune_rounded,
+                  label: 'mypage.match_weight'.tr(),
+                  onTap: () async {
+                    if (_user == null) return;
+                    final saved = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MatchWeightScreen(user: _user!),
+                      ),
+                    );
+                    if (saved == true) _loadUser();
                   },
                 ),
               ],

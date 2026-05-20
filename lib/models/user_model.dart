@@ -13,6 +13,14 @@ class UserModel {
   final String email;
   final String? avatarUrl;
 
+  // 매칭 알고리즘 가중치 (합계 = 100)
+  final int weightMajor;
+  final int weightInterests;
+  final int weightPersonality;
+  final int weightLanguage;
+  final int weightPurpose;
+  final int weightNationality;
+
   const UserModel({
     this.id = '',
     required this.name,
@@ -27,6 +35,12 @@ class UserModel {
     this.description = '',
     required this.email,
     this.avatarUrl,
+    this.weightMajor = 12,
+    this.weightInterests = 20,
+    this.weightPersonality = 17,
+    this.weightLanguage = 18,
+    this.weightPurpose = 25,
+    this.weightNationality = 8,
   });
 
   // "🇰🇷 대한민국" → "🇰🇷"
@@ -51,6 +65,12 @@ class UserModel {
         'description': description,
         'email': email,
         'avatarUrl': avatarUrl,
+        'weightMajor': weightMajor,
+        'weightInterests': weightInterests,
+        'weightPersonality': weightPersonality,
+        'weightLanguage': weightLanguage,
+        'weightPurpose': weightPurpose,
+        'weightNationality': weightNationality,
       };
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -61,6 +81,11 @@ class UserModel {
     List<String> list(String key1, [String? key2]) {
       final raw = json[key1] ?? (key2 != null ? json[key2] : null);
       return (raw as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    }
+
+    int intVal(String key1, [String? key2, int def = 0]) {
+      final raw = json[key1] ?? (key2 != null ? json[key2] : null);
+      return (raw as num?)?.toInt() ?? def;
     }
 
     return UserModel(
@@ -77,6 +102,12 @@ class UserModel {
       description: str('description'),
       email: str('email'),
       avatarUrl: (json['avatar_url'] ?? json['avatarUrl']) as String?,
+      weightMajor: intVal('weight_major', 'weightMajor', 12),
+      weightInterests: intVal('weight_interests', 'weightInterests', 20),
+      weightPersonality: intVal('weight_personality', 'weightPersonality', 17),
+      weightLanguage: intVal('weight_language', 'weightLanguage', 18),
+      weightPurpose: intVal('weight_purpose', 'weightPurpose', 25),
+      weightNationality: intVal('weight_nationality', 'weightNationality', 8),
     );
   }
 
@@ -94,6 +125,12 @@ class UserModel {
     String? description,
     String? email,
     String? avatarUrl,
+    int? weightMajor,
+    int? weightInterests,
+    int? weightPersonality,
+    int? weightLanguage,
+    int? weightPurpose,
+    int? weightNationality,
   }) =>
       UserModel(
         id: id ?? this.id,
@@ -109,5 +146,11 @@ class UserModel {
         description: description ?? this.description,
         email: email ?? this.email,
         avatarUrl: avatarUrl ?? this.avatarUrl,
+        weightMajor: weightMajor ?? this.weightMajor,
+        weightInterests: weightInterests ?? this.weightInterests,
+        weightPersonality: weightPersonality ?? this.weightPersonality,
+        weightLanguage: weightLanguage ?? this.weightLanguage,
+        weightPurpose: weightPurpose ?? this.weightPurpose,
+        weightNationality: weightNationality ?? this.weightNationality,
       );
 }

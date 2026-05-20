@@ -48,6 +48,8 @@ class _HoverButtonState extends State<HoverButton> {
           ),
           child: Text(
             widget.label,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
             style: TextStyle(
               color: _hovered ? Colors.white : widget.color,
               fontSize: widget.fontSize,

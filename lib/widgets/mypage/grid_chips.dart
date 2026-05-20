@@ -8,12 +8,17 @@ class GridChips extends StatelessWidget {
   final void Function(String) onTap;
   final int crossAxisCount;
 
+  /// 각 item의 표시 텍스트를 반환하는 함수 (다국어 지원용).
+  /// null 이면 item 자체를 표시.
+  final String Function(String item)? labelOf;
+
   const GridChips({
     super.key,
     required this.items,
     required this.selected,
     required this.onTap,
     this.crossAxisCount = 5,
+    this.labelOf,
   });
 
   @override
@@ -51,7 +56,7 @@ class GridChips extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    item,
+                    labelOf != null ? labelOf!(item) : item,
                     textAlign: TextAlign.center,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

@@ -14,6 +14,7 @@
     "save": "저장",
     "edit": "수정",
     "close": "닫기",
+    "later": "나중에",
     "network_error": "서버에 연결할 수 없어요.",
     "login_required": "로그인이 필요해요."
   },
@@ -23,7 +24,8 @@
     "subtitle": "당신과 잘 맞는 친구들을 소개할게요.",
     "profile_incomplete_title": "프로필을 완성해주세요!",
     "profile_incomplete_desc": "학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.",
-    "go_to_profile": "프로필 설정하러 가기"
+    "go_to_profile": "프로필 설정하러 가기",
+    "no_matches": "아직 추천할 친구가 없어요"
   },
 
   "matching": {
@@ -108,10 +110,45 @@
     "update": "수정하기"
   },
 
+  "edit_profile": {
+    "title": "프로필 편집",
+    "save": "저장",
+    "save_btn": "저장하기",
+    "saved": "프로필이 저장됐어요!",
+    "year": "학년",
+    "year_hint": "학년 선택",
+    "year_1": "1학년",
+    "year_2": "2학년",
+    "year_3": "3학년",
+    "year_4": "4학년",
+    "year_5": "5학년",
+    "year_6": "6학년",
+    "intro": "자기소개",
+    "intro_hint": "자신을 소개하는 글을 작성해 주세요.",
+    "purpose": "교류 목적",
+    "purpose_hint": "중복 선택 가능",
+    "interests": "관심사",
+    "personality": "성향",
+    "multi_hint": "기타 항목 포함 최대 3개 선택 가능",
+    "languages": "사용 가능 언어",
+    "other": "기타",
+    "complete_title": "프로필 완성! 🎉",
+    "complete_desc": "매칭 선호도를 설정하면\n나에게 맞는 친구를 더 잘 찾을 수 있어요.",
+    "go_weight": "설정하러 가기",
+    "add": "추가"
+  },
+
+  "match_card": {
+    "match": "매칭하기",
+    "matched": "매칭됨",
+    "chat": "채팅하기"
+  },
+
   "mypage": {
     "title": "마이페이지",
     "section_profile": "프로필 설정",
     "edit_profile": "프로필 편집",
+    "match_weight": "매칭 선호도 설정",
     "section_app": "앱 설정",
     "language": "언어 변경",
     "section_account": "계정",
@@ -123,5 +160,30 @@
     "delete_account_desc": "탈퇴하면 모든 데이터가 삭제되며\n복구할 수 없어요.",
     "password_hint": "비밀번호 입력",
     "withdraw": "탈퇴하기"
+  },
+
+  "weight": {
+    "title": "매칭 선호도 설정",
+    "desc_title": "나에게 맞는 친구 찾기 🎯",
+    "desc_body": "각 항목이 얼마나 중요한지 설정해보세요.\n중요도가 높을수록 매칭 점수에 더 큰 영향을 줘요.",
+    "save": "저장하기",
+    "save_success": "선호도가 저장됐어요!",
+    "save_error": "저장에 실패했어요.",
+    "major": "학과",
+    "interests": "관심사",
+    "personality": "성향",
+    "language": "언어",
+    "purpose": "교류 목적",
+    "nationality": "국적",
+    "major_desc": "같은 학과 / 같은 단과대",
+    "interests_desc": "공통 관심사 비율",
+    "personality_desc": "비슷한 성향 비율",
+    "language_desc": "공통 언어 비율",
+    "purpose_desc": "교류 목적 일치도",
+    "nationality_desc": "내국인 ↔ 외국인 여부",
+    "level_low": "낮음",
+    "level_medium": "보통",
+    "level_high": "높음",
+    "level_very_high": "매우 높음"
   }
 }
