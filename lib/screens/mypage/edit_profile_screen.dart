@@ -1,13 +1,16 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/profile_data.dart';
 import '../../models/user_model.dart';
 import '../../services/user_service.dart';
+import '../../widgets/auth/dropdown_field.dart';
 import '../../widgets/mypage/profile_image_picker.dart';
 import '../../widgets/mypage/grid_chips.dart';
 import '../../widgets/mypage/custom_chip_input.dart';
 import '../../widgets/mypage/hover_button.dart';
+import 'match_weight_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel? user;
@@ -34,7 +37,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final List<String> _customPersonalities = [];
   final List<String> _customLanguages = [];
 
-  static const _yearOptions = ['1학년', '2학년', '3학년', '4학년'];
+  static const _yearOptions = [
+    '1학년', '2학년', '3학년', '4학년', '5학년', '6학년'
+  ];
+
+  // 학년 → 번역 키
+  String _trYear(String year) {
+    final n = year.replaceAll('학년', '');
+    return 'edit_profile.year_$n'.tr();
+  }
+
+  // ── 영어 라벨 맵 ─────────────────────────────────────────────────────────────
+
+  static const _interestLabelsEn = {
+    '여행': 'Travel', '카페 탐방': 'Cafes', '영화': 'Movies',
+    '음악': 'Music', '운동': 'Exercise', 'K-POP': 'K-POP',
+    '요리': 'Cooking', '사진': 'Photography', '독서': 'Reading',
+    '게임': 'Gaming', '드라마': 'Drama', '패션': 'Fashion',
+    '뷰티': 'Beauty', '스포츠': 'Sports', '언어': 'Language',
+  };
+
+  static const _personalityLabelsEn = {
+    '외향적': 'Extrovert', '내향적': 'Introvert', '친화적': 'Sociable',
+    '차분한': 'Calm', '계획적인': 'Organized', '유쾌한': 'Cheerful',
+    '진지한': 'Serious', '활발한': 'Active', '감성적인': 'Emotional',
+    '호기심 많은': 'Curious',
+  };
+
+  static const _languageLabelsEn = {
+    '한국어': 'Korean', '영어': 'English', '중국어': 'Chinese',
+    '일본어': 'Japanese', '베트남어': 'Vietnamese', '프랑스어': 'French',
+    '독일어': 'German', '스페인어': 'Spanish', '러시아어': 'Russian',
+    '아랍어': 'Arabic',
+  };
+
+  static const _purposeLabelsEn = {
+    '언어교환': 'Language Exchange', '학업도움': 'Academic Help',
+    '친구사귀기': 'Making Friends', '문화교류': 'Cultural Exchange',
+  };
+
+  String Function(String) _labelOf(Map<String, String> enMap) {
+    final isEn = context.locale.languageCode == 'en';
+    return (item) => isEn ? (enMap[item] ?? item) : item;
+  }
 
   @override
   void initState() {
@@ -73,9 +118,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '프로필 편집',
-          style: TextStyle(
+        title: Text(
+          'edit_profile.title'.tr(),
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -85,9 +130,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text(
-              '저장',
-              style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600),
+            child: Text(
+              'edit_profile.save'.tr(),
+              style: const TextStyle(
+                  color: AppTheme.primary, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -99,125 +145,149 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             ProfileImagePicker(
               onTap: _pickImage,
-              imagePath: _pickedImagePath.isNotEmpty ? _pickedImagePath : null,
+              imagePath:
+                  _pickedImagePath.isNotEmpty ? _pickedImagePath : null,
             ),
             const SizedBox(height: 28),
 
-            _sectionTitle('학년'),
+            // 학년
+            _sectionTitle('edit_profile.year'.tr()),
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedYear.isEmpty ? null : _selectedYear,
-              hint: const Text('학년 선택', style: TextStyle(fontSize: 13, color: Color(0xFFAAB4C0))),
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppTheme.primary),
-                ),
-              ),
-              items: _yearOptions
-                  .map((y) => DropdownMenuItem(value: y, child: Text(y)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedYear = v ?? ''),
+            SelectorButton(
+              hint: 'edit_profile.year_hint'.tr(),
+              value: _selectedYear.isEmpty ? null : _trYear(_selectedYear),
+              onTap: () async {
+                final result = await showModalBottomSheet<String>(
+                  context: context,
+                  backgroundColor: Colors.transparent,
+                  isScrollControlled: true,
+                  builder: (_) => SimplePickerSheet(
+                    title: 'edit_profile.year'.tr(),
+                    items: _yearOptions,
+                    selectedItem:
+                        _selectedYear.isEmpty ? null : _selectedYear,
+                    itemLabel: _trYear,
+                  ),
+                );
+                if (result != null) setState(() => _selectedYear = result);
+              },
             ),
             const SizedBox(height: 24),
 
-            _sectionTitle('자기소개'),
+            // 자기소개
+            _sectionTitle('edit_profile.intro'.tr()),
             const SizedBox(height: 10),
             TextField(
               controller: _introController,
               maxLines: 4,
               maxLength: 100,
               decoration: InputDecoration(
-                hintText: '자신을 소개하는 글을 작성해 주세요.',
-                hintStyle: const TextStyle(fontSize: 13, color: Color(0xFFAAB4C0)),
+                hintText: 'edit_profile.intro_hint'.tr(),
+                hintStyle: const TextStyle(
+                    fontSize: 13, color: Color(0xFFAAB4C0)),
                 contentPadding: const EdgeInsets.all(14),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFDDE4EE)),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE4EE)),
+                  borderSide:
+                      const BorderSide(color: Color(0xFFDDE4EE)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: AppTheme.primary),
+                  borderSide:
+                      const BorderSide(color: AppTheme.primary),
                 ),
               ),
             ),
             const SizedBox(height: 24),
 
-            _sectionTitle('교류 목적', hint: '중복 선택 가능'),
+            // 교류 목적
+            _sectionTitle('edit_profile.purpose'.tr(),
+                hint: 'edit_profile.purpose_hint'.tr()),
             const SizedBox(height: 10),
             GridChips(
               items: exchangePurposeList,
               selected: _selectedPurposes,
               onTap: (item) => _toggle(_selectedPurposes, item),
+              labelOf: _labelOf(_purposeLabelsEn),
             ),
             const SizedBox(height: 24),
 
-            _sectionTitle('관심사', hint: '기타 항목 포함 최대 3개 선택 가능'),
+            // 관심사
+            _sectionTitle('edit_profile.interests'.tr(),
+                hint: 'edit_profile.multi_hint'.tr()),
             const SizedBox(height: 10),
             GridChips(
               items: interestList,
               selected: _selectedInterests,
-              onTap: (item) => _toggle(_selectedInterests, item, maxCount: 3, extraList: _customInterests),
+              onTap: (item) => _toggle(_selectedInterests, item,
+                  maxCount: 3, extraList: _customInterests),
+              labelOf: _labelOf(_interestLabelsEn),
             ),
             const SizedBox(height: 8),
             CustomChipInput(
               controller: _customInterestController,
               customItems: _customInterests,
-              hintText: '기타',
-              onAdd: () => _addCustom(_customInterestController, _customInterests, baseList: _selectedInterests, maxCount: 3),
-              onRemove: (item) => setState(() => _customInterests.remove(item)),
+              hintText: 'edit_profile.other'.tr(),
+              onAdd: () => _addCustom(_customInterestController,
+                  _customInterests,
+                  baseList: _selectedInterests, maxCount: 3),
+              onRemove: (item) =>
+                  setState(() => _customInterests.remove(item)),
             ),
             const SizedBox(height: 24),
 
-            _sectionTitle('성향', hint: '기타 항목 포함 최대 3개 선택 가능'),
+            // 성향
+            _sectionTitle('edit_profile.personality'.tr(),
+                hint: 'edit_profile.multi_hint'.tr()),
             const SizedBox(height: 10),
             GridChips(
               items: personalityList,
               selected: _selectedPersonalities,
-              onTap: (item) => _toggle(_selectedPersonalities, item, maxCount: 3, extraList: _customPersonalities),
+              onTap: (item) => _toggle(_selectedPersonalities, item,
+                  maxCount: 3, extraList: _customPersonalities),
+              labelOf: _labelOf(_personalityLabelsEn),
             ),
             const SizedBox(height: 8),
             CustomChipInput(
               controller: _customPersonalityController,
               customItems: _customPersonalities,
-              hintText: '기타',
-              onAdd: () => _addCustom(_customPersonalityController, _customPersonalities, baseList: _selectedPersonalities, maxCount: 3),
-              onRemove: (item) => setState(() => _customPersonalities.remove(item)),
+              hintText: 'edit_profile.other'.tr(),
+              onAdd: () => _addCustom(_customPersonalityController,
+                  _customPersonalities,
+                  baseList: _selectedPersonalities, maxCount: 3),
+              onRemove: (item) =>
+                  setState(() => _customPersonalities.remove(item)),
             ),
             const SizedBox(height: 24),
 
-            _sectionTitle('사용 가능 언어'),
+            // 사용 가능 언어
+            _sectionTitle('edit_profile.languages'.tr()),
             const SizedBox(height: 10),
             GridChips(
               items: languageList,
               selected: _selectedLanguages,
               onTap: (item) => _toggle(_selectedLanguages, item),
+              labelOf: _labelOf(_languageLabelsEn),
             ),
             const SizedBox(height: 8),
             CustomChipInput(
               controller: _customLanguageController,
               customItems: _customLanguages,
-              hintText: '기타',
-              onAdd: () => _addCustom(_customLanguageController, _customLanguages),
-              onRemove: (item) => setState(() => _customLanguages.remove(item)),
+              hintText: 'edit_profile.other'.tr(),
+              onAdd: () =>
+                  _addCustom(_customLanguageController, _customLanguages),
+              onRemove: (item) =>
+                  setState(() => _customLanguages.remove(item)),
             ),
             const SizedBox(height: 40),
 
             HoverButton(
-              label: '저장하기',
+              label: 'edit_profile.save_btn'.tr(),
               onPressed: _save,
               color: AppTheme.primary,
               width: double.infinity,
@@ -246,22 +316,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 4),
           Text(
             hint,
-            style: const TextStyle(fontSize: 12, color: Color(0xFFAAB4C0)),
+            style:
+                const TextStyle(fontSize: 12, color: Color(0xFFAAB4C0)),
           ),
         ],
       ],
     );
   }
 
-  void _toggle(List<String> list, String item, {int? maxCount, List<String>? extraList}) {
+  void _toggle(List<String> list, String item,
+      {int? maxCount, List<String>? extraList}) {
     setState(() {
       if (list.contains(item)) {
         list.remove(item);
       } else {
         final total = list.length + (extraList?.length ?? 0);
-        if (maxCount == null || total < maxCount) {
-          list.add(item);
-        }
+        if (maxCount == null || total < maxCount) list.add(item);
       }
     });
   }
@@ -283,37 +353,93 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
+    final picked = await ImagePicker()
+        .pickImage(source: ImageSource.gallery, imageQuality: 80);
     if (picked == null) return;
     setState(() => _pickedImagePath = picked.path);
   }
 
   Future<void> _save() async {
+    final wasIncomplete =
+        widget.user == null || !widget.user!.isProfileComplete;
+
     final currentUser = await UserService.loadUser();
     if (currentUser == null) {
       if (mounted) Navigator.pop(context);
       return;
     }
+
     final updated = currentUser.copyWith(
       year: _selectedYear,
       interests: [..._selectedInterests, ..._customInterests],
       exchangePurposes: _selectedPurposes,
-      personalities: [..._selectedPersonalities, ..._customPersonalities],
+      personalities: [
+        ..._selectedPersonalities,
+        ..._customPersonalities
+      ],
       languages: [..._selectedLanguages, ..._customLanguages],
       description: _introController.text.trim(),
-      avatarUrl: _pickedImagePath.isNotEmpty ? _pickedImagePath : currentUser.avatarUrl,
+      avatarUrl: _pickedImagePath.isNotEmpty
+          ? _pickedImagePath
+          : currentUser.avatarUrl,
     );
     await UserService.saveUser(updated);
+
+    if (!mounted) return;
+
+    // 처음으로 프로필이 완성됐을 때 → 매칭 선호도 설정 안내
+    if (wasIncomplete && updated.isProfileComplete) {
+      final go = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'edit_profile.complete_title'.tr(),
+            style: const TextStyle(
+                fontWeight: FontWeight.w700, fontSize: 17),
+          ),
+          content: Text(
+            'edit_profile.complete_desc'.tr(),
+            style: const TextStyle(height: 1.6),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('common.later'.tr(),
+                  style: const TextStyle(
+                      color: AppTheme.textSecondary)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('edit_profile.go_weight'.tr(),
+                  style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+      if (go == true) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => MatchWeightScreen(user: updated)),
+        );
+      }
+    }
+
     if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('프로필이 저장됐어요!'),
+        content: Text('edit_profile.saved'.tr()),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

@@ -7,11 +7,13 @@ import '../../widgets/matching/matched_user_tile.dart';
 class MatchingScreen extends StatelessWidget {
   final List<MatchUser> users;
   final void Function(MatchUser) onToggle;
+  final void Function(MatchUser) onStartChat;
 
   const MatchingScreen({
     super.key,
     required this.users,
     required this.onToggle,
+    required this.onStartChat,
   });
 
   @override
@@ -74,6 +76,7 @@ class MatchingScreen extends StatelessWidget {
         itemBuilder: (context, i) => MatchedUserTile(
               user: users[i],
               onToggle: () => onToggle(users[i]),
+              onStartChat: () => onStartChat(users[i]),
             ),
       ),
     );

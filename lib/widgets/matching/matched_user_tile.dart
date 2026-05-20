@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
-import '../../screens/chatting/chatting_room_screen.dart';
 import '../../theme/app_theme.dart';
 import '../home/match_card.dart';
 
 class MatchedUserTile extends StatelessWidget {
   final MatchUser user;
   final VoidCallback onToggle;
+  final VoidCallback onStartChat;
 
   const MatchedUserTile({
     super.key,
     required this.user,
     required this.onToggle,
+    required this.onStartChat,
   });
 
   @override
@@ -116,7 +117,7 @@ class MatchedUserTile extends StatelessWidget {
               ),
             ),
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.58,
+              height: MediaQuery.of(context).size.height * 0.68,
               child: MatchCard(
                 user: user,
                 isMatched: true,
@@ -126,12 +127,7 @@ class MatchedUserTile extends StatelessWidget {
                 },
                 onChatTap: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChattingRoomScreen(user: user),
-                    ),
-                  );
+                  onStartChat();
                 },
               ),
             ),

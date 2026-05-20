@@ -14,6 +14,7 @@
     "save": "Save",
     "edit": "Edit",
     "close": "Close",
+    "later": "Later",
     "network_error": "Cannot connect to server.",
     "login_required": "Login required."
   },
@@ -23,7 +24,8 @@
     "subtitle": "Here are friends who match well with you.",
     "profile_incomplete_title": "Complete your profile!",
     "profile_incomplete_desc": "Set your grade, interests, and exchange purpose\nto find friends who match you.",
-    "go_to_profile": "Set up profile"
+    "go_to_profile": "Set up profile",
+    "no_matches": "No recommendations yet"
   },
 
   "matching": {
@@ -108,10 +110,45 @@
     "update": "Update"
   },
 
+  "edit_profile": {
+    "title": "Edit Profile",
+    "save": "Save",
+    "save_btn": "Save Profile",
+    "saved": "Profile saved!",
+    "year": "Year",
+    "year_hint": "Select year",
+    "year_1": "1st Year",
+    "year_2": "2nd Year",
+    "year_3": "3rd Year",
+    "year_4": "4th Year",
+    "year_5": "5th Year",
+    "year_6": "6th Year",
+    "intro": "Introduction",
+    "intro_hint": "Write a brief introduction about yourself.",
+    "purpose": "Exchange Purpose",
+    "purpose_hint": "Multiple selections allowed",
+    "interests": "Interests",
+    "personality": "Personality",
+    "multi_hint": "Up to 3 including custom entries",
+    "languages": "Languages",
+    "other": "Other",
+    "complete_title": "Profile complete! 🎉",
+    "complete_desc": "Set your matching preferences to find\nfriends that match you better.",
+    "go_weight": "Set preferences",
+    "add": "Add"
+  },
+
+  "match_card": {
+    "match": "Match",
+    "matched": "Matched",
+    "chat": "Chat"
+  },
+
   "mypage": {
     "title": "My Page",
     "section_profile": "Profile",
     "edit_profile": "Edit Profile",
+    "match_weight": "Matching Preferences",
     "section_app": "App Settings",
     "language": "Change Language",
     "section_account": "Account",
@@ -123,5 +160,30 @@
     "delete_account_desc": "All data will be permanently deleted\nand cannot be recovered.",
     "password_hint": "Enter password",
     "withdraw": "Delete Account"
+  },
+
+  "weight": {
+    "title": "Matching Preferences",
+    "desc_title": "Find your perfect match 🎯",
+    "desc_body": "Set how important each criterion is to you.\nHigher importance means a bigger impact on your match score.",
+    "save": "Save",
+    "save_success": "Preferences saved!",
+    "save_error": "Failed to save.",
+    "major": "Major",
+    "interests": "Interests",
+    "personality": "Personality",
+    "language": "Language",
+    "purpose": "Exchange Purpose",
+    "nationality": "Nationality",
+    "major_desc": "Same major / same college",
+    "interests_desc": "Common interests ratio",
+    "personality_desc": "Similar personality ratio",
+    "language_desc": "Common languages ratio",
+    "purpose_desc": "Exchange purpose match",
+    "nationality_desc": "Local ↔ International",
+    "level_low": "Low",
+    "level_medium": "Medium",
+    "level_high": "High",
+    "level_very_high": "Very High"
   }
 }

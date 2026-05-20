@@ -32,6 +32,24 @@ class ApiClient {
     throw ApiException(res.statusCode, detail);
   }
 
+  /// GET 요청으로 JSON 배열을 반환하는 엔드포인트용
+  static Future<List<dynamic>> getList(
+    String path, {
+    Map<String, String>? params,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$path')
+        .replace(queryParameters: params);
+    final res = await http.get(uri, headers: {'Content-Type': 'application/json'});
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+    }
+
+    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+    final detail = (decoded as Map?)?['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+    throw ApiException(res.statusCode, detail);
+  }
+
   static Future<Map<String, dynamic>> patch(
     String path, [
     Map<String, dynamic>? body,

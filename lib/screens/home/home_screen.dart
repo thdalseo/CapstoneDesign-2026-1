@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
+import '../../services/match_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../screens/matching/matching_screen.dart';
@@ -26,37 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentPage = 0;
   late final PageController _pageController;
   UserModel? _currentUser;
-  final List<MatchUser> _matchedUsers = [];
-
-  final List<MatchUser> _matchList = const [
-    MatchUser(
-      name: 'Sofia',
-      country: '🇺🇸',
-      major: '경영학과',
-      year: '2학년',
-      interests: ['여행', '카페 탐방', '영화'],
-      description: '한국어 공부 중이에요!\n서로 함께 언어 교환해요 😊',
-      matchPercent: 92,
-    ),
-    MatchUser(
-      name: 'Liam',
-      country: '🇬🇧',
-      major: '컴퓨터공학과',
-      year: '3학년',
-      interests: ['게임', '음악', 'K-POP'],
-      description: '한국 문화에 관심이 많아요!\n같이 공부도 하고 싶어요 📚',
-      matchPercent: 87,
-    ),
-    MatchUser(
-      name: 'Amara',
-      country: '🇳🇬',
-      major: '국제학부',
-      year: '1학년',
-      interests: ['요리', '운동', '사진'],
-      description: '캠퍼스 생활 도움이 필요해요!\n친하게 지내고 싶어요 😄',
-      matchPercent: 81,
-    ),
-  ];
+  final List<MatchUser> _matchedUsers = [];   // 매칭 목록 (퍼즐 버튼)
+  final List<MatchUser> _chattingUsers = [];  // 채팅 목록 (채팅 버튼)
+  List<MatchUser> _matchList = [];
+  bool _loadingMatches = false;
 
   @override
   void initState() {
@@ -67,7 +41,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadUser() async {
     final user = await UserService.loadUser();
-    if (mounted) setState(() => _currentUser = user);
+    if (mounted) {
+      setState(() => _currentUser = user);
+      if (user != null && user.isProfileComplete) {
+        _loadMatches(user.email);
+      }
+    }
+  }
+
+  Future<void> _loadMatches(String email) async {
+    if (_loadingMatches) return;
+    setState(() => _loadingMatches = true);
+    try {
+      final matches = await MatchService.fetchMatches(email);
+      if (mounted) setState(() => _matchList = matches);
+    } catch (_) {
+      // 서버 연결 실패 시 빈 목록 유지
+    } finally {
+      if (mounted) setState(() => _loadingMatches = false);
+    }
   }
 
   void _toggleMatched(MatchUser user) {
@@ -79,6 +71,22 @@ class _HomeScreenState extends State<HomeScreen> {
         _matchedUsers.removeAt(idx);
       }
     });
+  }
+
+  /// 채팅 시작 — 채팅 목록에만 추가하고 채팅방으로 이동
+  void _startChat(MatchUser user, {String? initialMessage}) {
+    if (!_chattingUsers.any((u) => u.name == user.name)) {
+      setState(() => _chattingUsers.add(user));
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChattingRoomScreen(
+          user: user,
+          initialMessage: initialMessage,
+        ),
+      ),
+    );
   }
 
   @override
@@ -110,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
+                color: AppTheme.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -179,25 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
         return MatchingScreen(
           users: _matchedUsers,
           onToggle: _toggleMatched,
+          onStartChat: (user) => _startChat(user),
         );
       case 2:
-        return ChattingScreen(users: _matchedUsers);
+        return ChattingScreen(users: _chattingUsers);
       case 3:
         return HelpingScreen(
-          onStartChat: (user, systemMessage) {
-            if (!_matchedUsers.any((u) => u.name == user.name)) {
-              setState(() => _matchedUsers.add(user));
-            }
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ChattingRoomScreen(
-                  user: user,
-                  initialMessage: systemMessage,
-                ),
-              ),
-            );
-          },
+          onStartChat: (user, systemMessage) =>
+              _startChat(user, initialMessage: systemMessage),
         );
       case 4:
         return const MyPageScreen();
@@ -269,6 +266,35 @@ class _HomeScreenState extends State<HomeScreen> {
         // 프로필 미완성 배너 or 매칭 카드
         if (_currentUser != null && !_currentUser!.isProfileComplete) ...[
           Expanded(child: _buildProfileIncompleteSection()),
+        ] else if (_loadingMatches) ...[
+          const Expanded(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primary,
+                strokeWidth: 2.5,
+              ),
+            ),
+          ),
+        ] else if (_matchList.isEmpty) ...[
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.people_outline_rounded,
+                      size: 52, color: AppTheme.textSecondary.withValues(alpha: 0.4)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'home.no_matches'.tr(),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ] else ...[
           Expanded(
             child: PageView.builder(
@@ -304,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 페이지 인디케이터 (작은 원 3개)
+          // 페이지 인디케이터
           Padding(
             padding: const EdgeInsets.only(top: 6, bottom: 16),
             child: Row(

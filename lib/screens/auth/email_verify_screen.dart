@@ -42,6 +42,7 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
   bool _isLoading = false;
   bool _isExpired = false;
   bool _isDistributing = false;
+  bool _isHoveredVerify = false;
 
   @override
   void initState() {
@@ -262,31 +263,62 @@ class _EmailVerifyScreenState extends State<EmailVerifyScreen> {
               const SizedBox(height: 32),
               SizedBox(
                 width: 314, height: 46,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: (_isFilled && !_isExpired) ? AppTheme.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: (_isFilled && !_isExpired) ? AppTheme.primary : const Color(0xFFD0DCEF),
-                      width: 1.5,
+                child: MouseRegion(
+                  cursor: (_isFilled && !_isExpired)
+                      ? SystemMouseCursors.click
+                      : MouseCursor.defer,
+                  onEnter: (_) {
+                    if (_isFilled && !_isExpired) {
+                      setState(() => _isHoveredVerify = true);
+                    }
+                  },
+                  onExit: (_) => setState(() => _isHoveredVerify = false),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: (_isFilled && !_isExpired && _isHoveredVerify)
+                          ? AppTheme.primary
+                          : (_isFilled && !_isExpired)
+                              ? Colors.transparent
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: (_isFilled && !_isExpired)
+                            ? AppTheme.primary
+                            : const Color(0xFFD0DCEF),
+                        width: 1.5,
+                      ),
                     ),
-                  ),
-                  child: TextButton(
-                    onPressed: (_isFilled && !_isExpired && !_isLoading) ? _verify : null,
-                    style: TextButton.styleFrom(
-                      foregroundColor: (_isFilled && !_isExpired) ? Colors.white : const Color(0xFFD0DCEF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    child: TextButton(
+                      onPressed: (_isFilled && !_isExpired && !_isLoading)
+                          ? _verify
+                          : null,
+                      style: TextButton.styleFrom(
+                        foregroundColor: (_isFilled && !_isExpired)
+                            ? (_isHoveredVerify
+                                ? Colors.white
+                                : AppTheme.primary)
+                            : const Color(0xFFD0DCEF),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: _isLoading
+                          ? SizedBox(
+                              width: 22, height: 22,
+                              child: CircularProgressIndicator(
+                                color: (_isFilled && !_isExpired)
+                                    ? (_isHoveredVerify
+                                        ? Colors.white
+                                        : AppTheme.primary)
+                                    : const Color(0xFFD0DCEF),
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : const Text('인증 확인',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600)),
                     ),
-                    child: _isLoading
-                        ? SizedBox(
-                            width: 22, height: 22,
-                            child: CircularProgressIndicator(
-                              color: (_isFilled && !_isExpired) ? Colors.white : const Color(0xFFD0DCEF),
-                              strokeWidth: 2.5,
-                            ),
-                          )
-                        : const Text('인증 확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
