@@ -47,6 +47,11 @@
     "connected": "연결됨",
     "conn_error": "연결 오류",
     "offline": "오프라인",
+    "translate": "번역보기",
+    "hide_translation": "번역 닫기",
+    "translating": "번역 중...",
+    "translate_post": "번역",
+    "hide_post_translation": "닫기",
     "suggestions": [
       "안녕하세요! 만나서 반가워요 😊",
       "어떤 언어를 배우고 싶으세요?",

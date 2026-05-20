@@ -1,5 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/chat_message.dart';
+import '../../services/translation_service.dart';
 import '../../theme/app_theme.dart';
 
 class ChatBubble extends StatefulWidget {
@@ -13,6 +15,8 @@ class ChatBubble extends StatefulWidget {
 
 class _ChatBubbleState extends State<ChatBubble> {
   bool _showTranslation = false;
+  bool _isTranslating = false;
+  String? _translatedText;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +42,8 @@ class _ChatBubbleState extends State<ChatBubble> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _bubble(context, isMe),
+                    if (_showTranslation && _translatedText != null)
+                      _translationBox(context),
                     const SizedBox(height: 4),
                     _translateButton(),
                   ],
@@ -51,30 +57,104 @@ class _ChatBubbleState extends State<ChatBubble> {
 
   Widget _translateButton() {
     return GestureDetector(
-      onTap: () {
-        setState(() => _showTranslation = !_showTranslation);
-        // TODO: 번역 API 연동
-      },
+      onTap: _isTranslating ? null : _onTranslateTap,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.translate_rounded,
-            size: 12,
-            color: _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
-          ),
+          if (_isTranslating)
+            const SizedBox(
+              width: 11,
+              height: 11,
+              child: CircularProgressIndicator(
+                  strokeWidth: 1.5, color: AppTheme.primary),
+            )
+          else
+            Icon(
+              Icons.translate_rounded,
+              size: 12,
+              color:
+                  _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
+            ),
           const SizedBox(width: 3),
           Text(
-            _showTranslation ? '번역 닫기' : '번역보기',
+            _isTranslating
+                ? 'chat.translating'.tr()
+                : _showTranslation
+                    ? 'chat.hide_translation'.tr()
+                    : 'chat.translate'.tr(),
             style: TextStyle(
               fontSize: 11,
-              color: _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
+              color:
+                  _showTranslation ? AppTheme.primary : AppTheme.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _translationBox(BuildContext context) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.62,
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(top: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F4FF),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.translate_rounded,
+                size: 12, color: AppTheme.primary),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                _translatedText!,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onTranslateTap() async {
+    if (_showTranslation && _translatedText != null) {
+      setState(() => _showTranslation = false);
+      return;
+    }
+    if (_translatedText != null) {
+      setState(() => _showTranslation = true);
+      return;
+    }
+    setState(() => _isTranslating = true);
+    try {
+      final targetLang = context.locale.languageCode;
+      final result = await TranslationService.translate(
+        widget.message.content,
+        targetLang: targetLang,
+      );
+      if (mounted) {
+        setState(() {
+          _translatedText = result;
+          _showTranslation = true;
+          _isTranslating = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isTranslating = false);
+    }
   }
 
   Widget _avatar() => Container(

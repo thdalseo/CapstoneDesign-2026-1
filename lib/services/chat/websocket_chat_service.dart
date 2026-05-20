@@ -1,126 +1,129 @@
 import 'dart:async';
 import 'dart:convert';
-// TODO: pubspec.yaml 에 web_socket_channel: ^2.4.0 추가 후 아래 주석 해제
-// import 'package:web_socket_channel/web_socket_channel.dart';
+
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../../core/api_client.dart';
 import '../../models/chat_message.dart';
 import 'chat_service.dart';
 
-/// WebSocket 기반 실제 구현체.
+/// 실제 백엔드(FastAPI WebSocket)와 통신하는 구현체.
 ///
-/// 백엔드 준비 시 체크리스트:
-///   1. pubspec.yaml 에 web_socket_channel: ^2.4.0 추가 → flutter pub get
-///   2. [_wsBaseUrl] 을 실제 서버 주소로 교체  (예: ws://api.yourapp.com/ws/chat)
-///   3. [_myUserId] 를 인증 서비스에서 가져오도록 교체
-///   4. 서버 메시지 JSON 스키마에 맞게 _parseIncoming() 수정
-///   5. ChatServiceFactory._useMock 을 false 로 변경
+/// 서버 주소:
+///   - 웹 / iOS 시뮬레이터 / 데스크톱: ws://127.0.0.1:8000
+///   - Android 에뮬레이터: ws://10.0.2.2:8000  (에뮬레이터 전용 루프백)
+///   - 실기기 (같은 Wi-Fi): ws://PC_IP:8000
 class WebSocketChatService implements ChatService {
-  // ── 서버 설정 ───────────────────────────────────────────────
-  // ignore: unused_field
-  static const String _wsBaseUrl = 'ws://localhost:8080/ws/chat';
-  static const String _myUserId = 'me';
-  // ────────────────────────────────────────────────────────────
+  static const String _wsBase  = 'ws://127.0.0.1:8000';
 
-  final _messageController = StreamController<ChatMessage>.broadcast();
-  final _stateController = StreamController<ChatConnectionState>.broadcast();
+  /// 현재 로그인한 유저의 DB id (String).
+  /// ApiClient / UserService 에서 주입받는다.
+  final String myUserId;
 
-  // WebSocketChannel? _channel;   // ← 주석 해제 필요
+  WebSocketChatService({required this.myUserId});
+
+  // ── 내부 상태 ────────────────────────────────────────────────────────────────
+  final _msgCtrl   = StreamController<ChatMessage>.broadcast();
+  final _stateCtrl = StreamController<ChatConnectionState>.broadcast();
+
+  WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
-  int _idSeq = 1;
-  // ignore: unused_field
-  String _roomId = '';
+  int _localIdSeq = 1;
+
+  // ── 공개 스트림 ───────────────────────────────────────────────────────────────
 
   @override
-  Stream<ChatMessage> get messageStream => _messageController.stream;
+  Stream<ChatMessage> get messageStream => _msgCtrl.stream;
 
   @override
-  Stream<ChatConnectionState> get connectionState => _stateController.stream;
+  Stream<ChatConnectionState> get connectionState => _stateCtrl.stream;
+
+  // ── ChatService 구현 ──────────────────────────────────────────────────────────
 
   @override
   Future<void> connect(String roomId) async {
-    _roomId = roomId;
-    _stateController.add(ChatConnectionState.connecting);
-
+    _stateCtrl.add(ChatConnectionState.connecting);
     try {
-      // TODO: 아래 두 줄 주석 해제
-      // final uri = Uri.parse('$_wsBaseUrl/$roomId');
-      // _channel = WebSocketChannel.connect(uri);
+      final uri = Uri.parse('$_wsBase/ws/chat/$roomId');
+      _channel = WebSocketChannel.connect(uri);
 
-      // TODO: 인증 헤더 필요 시 WebSocketChannel.connect(uri, protocols: [...]) 활용
-
-      // _wsSub = _channel!.stream.listen(
-      //   _parseIncoming,
-      //   onError: (e) => _stateController.add(ChatConnectionState.error),
-      //   onDone: () => _stateController.add(ChatConnectionState.disconnected),
-      // );
-
-      _stateController.add(ChatConnectionState.connected);
+      _wsSub = _channel!.stream.listen(
+        _onMessage,
+        onError: (_) => _stateCtrl.add(ChatConnectionState.error),
+        onDone:  () => _stateCtrl.add(ChatConnectionState.disconnected),
+      );
+      _stateCtrl.add(ChatConnectionState.connected);
     } catch (_) {
-      _stateController.add(ChatConnectionState.error);
+      _stateCtrl.add(ChatConnectionState.error);
     }
   }
 
   @override
   Future<void> disconnect() async {
     await _wsSub?.cancel();
-    // _channel?.sink.close();   // ← 주석 해제 필요
-    _stateController.add(ChatConnectionState.disconnected);
+    await _channel?.sink.close();
+    _stateCtrl.add(ChatConnectionState.disconnected);
   }
 
   @override
   Future<void> send(String content) async {
-    final msg = ChatMessage(
-      id: '${_idSeq++}',
+    // 낙관적 업데이트: 서버 응답 대기 없이 즉시 UI에 반영
+    _msgCtrl.add(ChatMessage(
+      id: 'local_${_localIdSeq++}',
       content: content,
       timestamp: DateTime.now(),
       isMe: true,
-    );
+    ));
 
-    // 서버 전송 전에 UI 에 즉시 반영 (낙관적 업데이트)
-    _messageController.add(msg);
-
-    // TODO: 아래 주석 해제
-    // _channel?.sink.add(jsonEncode({
-    //   'type': 'message',
-    //   'roomId': _roomId,
-    //   'senderId': _myUserId,
-    //   'content': content,
-    //   'timestamp': msg.timestamp.toIso8601String(),
-    // }));
+    // 서버로 전송 (서버는 보낸 사람을 제외하고 브로드캐스트)
+    _channel?.sink.add(jsonEncode({
+      'type': 'message',
+      'sender_id': myUserId,
+      'content': content,
+    }));
   }
 
   @override
   Future<List<ChatMessage>> fetchHistory(String roomId) async {
-    // TODO: REST API 또는 WebSocket 초기 패킷으로 히스토리 로드
-    // 예시 (http 패키지 사용):
-    // final res = await http.get(Uri.parse('https://api.yourapp.com/rooms/$roomId/messages'));
-    // final list = jsonDecode(res.body) as List;
-    // return list.map(_parseMessage).toList();
-    return [];
-  }
-
-  /// 서버에서 수신한 JSON 문자열을 파싱해 스트림에 추가
-  // ignore: unused_element
-  void _parseIncoming(dynamic raw) {
     try {
-      final data = jsonDecode(raw as String) as Map<String, dynamic>;
-
-      // TODO: 서버 스키마에 맞게 필드명 수정
-      if (data['type'] == 'message') {
-        _messageController.add(ChatMessage(
-          id: data['id'] as String,
-          content: data['content'] as String,
-          timestamp: DateTime.parse(data['timestamp'] as String),
-          isMe: (data['senderId'] as String) == _myUserId,
-        ));
-      }
+      final list = await ApiClient.getList('/chat/rooms/$roomId/messages');
+      return list.map((json) {
+        final j = json as Map<String, dynamic>;
+        return ChatMessage(
+          id: j['id'].toString(),
+          content: j['content'] as String,
+          timestamp: DateTime.parse(j['timestamp'] as String),
+          isMe: j['sender_id']?.toString() == myUserId,
+        );
+      }).toList();
     } catch (_) {
-      // 파싱 오류는 조용히 무시 (필요 시 로깅 추가)
+      return [];
     }
   }
 
   @override
   void dispose() {
-    _messageController.close();
-    _stateController.close();
+    _msgCtrl.close();
+    _stateCtrl.close();
+  }
+
+  // ── 수신 처리 ─────────────────────────────────────────────────────────────────
+
+  /// 서버에서 브로드캐스트된 메시지 수신.
+  /// 서버는 보낸 사람을 제외하고 전송하므로 여기서 받는 메시지는 상대방 것.
+  void _onMessage(dynamic raw) {
+    try {
+      final data = jsonDecode(raw as String) as Map<String, dynamic>;
+      if (data['type'] != 'message') return;
+
+      _msgCtrl.add(ChatMessage(
+        id: data['id'].toString(),
+        content: data['content'] as String,
+        timestamp: DateTime.parse(data['timestamp'] as String),
+        isMe: false, // 서버가 exclude 처리했으므로 항상 상대방 메시지
+      ));
+    } catch (_) {
+      // 파싱 오류 무시
+    }
   }
 }

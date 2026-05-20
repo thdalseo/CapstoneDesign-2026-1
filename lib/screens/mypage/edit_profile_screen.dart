@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/profile_data.dart';
+import '../../constants/profile_labels.dart';
 import '../../models/user_model.dart';
 import '../../services/user_service.dart';
 import '../../widgets/auth/dropdown_field.dart';
@@ -47,39 +48,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return 'edit_profile.year_$n'.tr();
   }
 
-  // ── 영어 라벨 맵 ─────────────────────────────────────────────────────────────
-
-  static const _interestLabelsEn = {
-    '여행': 'Travel', '카페 탐방': 'Cafes', '영화': 'Movies',
-    '음악': 'Music', '운동': 'Exercise', 'K-POP': 'K-POP',
-    '요리': 'Cooking', '사진': 'Photography', '독서': 'Reading',
-    '게임': 'Gaming', '드라마': 'Drama', '패션': 'Fashion',
-    '뷰티': 'Beauty', '스포츠': 'Sports', '언어': 'Language',
-  };
-
-  static const _personalityLabelsEn = {
-    '외향적': 'Extrovert', '내향적': 'Introvert', '친화적': 'Sociable',
-    '차분한': 'Calm', '계획적인': 'Organized', '유쾌한': 'Cheerful',
-    '진지한': 'Serious', '활발한': 'Active', '감성적인': 'Emotional',
-    '호기심 많은': 'Curious',
-  };
-
-  static const _languageLabelsEn = {
-    '한국어': 'Korean', '영어': 'English', '중국어': 'Chinese',
-    '일본어': 'Japanese', '베트남어': 'Vietnamese', '프랑스어': 'French',
-    '독일어': 'German', '스페인어': 'Spanish', '러시아어': 'Russian',
-    '아랍어': 'Arabic',
-  };
-
-  static const _purposeLabelsEn = {
-    '언어교환': 'Language Exchange', '학업도움': 'Academic Help',
-    '친구사귀기': 'Making Friends', '문화교류': 'Cultural Exchange',
-  };
-
-  String Function(String) _labelOf(Map<String, String> enMap) {
-    final isEn = context.locale.languageCode == 'en';
-    return (item) => isEn ? (enMap[item] ?? item) : item;
-  }
+  // ── 로케일별 라벨 헬퍼 (profile_labels.dart 위임) ───────────────────────────
+  String get _locale => context.locale.languageCode;
 
   @override
   void initState() {
@@ -213,7 +183,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               items: exchangePurposeList,
               selected: _selectedPurposes,
               onTap: (item) => _toggle(_selectedPurposes, item),
-              labelOf: _labelOf(_purposeLabelsEn),
+              labelOf: purposeLabelOf(_locale),
             ),
             const SizedBox(height: 24),
 
@@ -226,7 +196,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               selected: _selectedInterests,
               onTap: (item) => _toggle(_selectedInterests, item,
                   maxCount: 3, extraList: _customInterests),
-              labelOf: _labelOf(_interestLabelsEn),
+              labelOf: interestLabelOf(_locale),
             ),
             const SizedBox(height: 8),
             CustomChipInput(
@@ -250,7 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               selected: _selectedPersonalities,
               onTap: (item) => _toggle(_selectedPersonalities, item,
                   maxCount: 3, extraList: _customPersonalities),
-              labelOf: _labelOf(_personalityLabelsEn),
+              labelOf: personalityLabelOf(_locale),
             ),
             const SizedBox(height: 8),
             CustomChipInput(
@@ -272,7 +242,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               items: languageList,
               selected: _selectedLanguages,
               onTap: (item) => _toggle(_selectedLanguages, item),
-              labelOf: _labelOf(_languageLabelsEn),
+              labelOf: languageLabelOf(_locale),
             ),
             const SizedBox(height: 8),
             CustomChipInput(

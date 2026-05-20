@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../models/chat_message.dart';
 import '../../models/match_user.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/chat_service_factory.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/chatting/chat_bubble.dart';
 import '../../widgets/chatting/chat_input_bar.dart';
@@ -27,7 +29,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  late final ChatService _service;
+  ChatService? _service;        // 비동기 초기화 전까지 null
   final List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSub;
   ChatConnectionState _connState = ChatConnectionState.disconnected;
@@ -37,23 +39,32 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   @override
   void initState() {
     super.initState();
-    _service = ChatServiceFactory.create();
     _init();
   }
 
+  /// 1) 서비스 생성  2) 채팅방 ID 확보  3) 히스토리 로드  4) WebSocket 연결
   Future<void> _init() async {
-    _service.connectionState.listen((state) {
+    // ── 1. 서비스 생성 (myUserId 포함) ──────────────────────────────────────
+    final svc = await ChatServiceFactory.create();
+    if (!mounted) return;
+    _service = svc;
+
+    _service!.connectionState.listen((state) {
       if (mounted) setState(() => _connState = state);
     });
-
-    _messageSub = _service.messageStream.listen((msg) {
+    _messageSub = _service!.messageStream.listen((msg) {
       if (mounted) {
         setState(() => _messages.add(msg));
         _scrollToBottom();
       }
     });
 
-    final history = await _service.fetchHistory(widget.user.name);
+    // ── 2. 채팅방 ID 확보 ────────────────────────────────────────────────────
+    final roomId = await _resolveRoomId();
+    if (!mounted) return;
+
+    // ── 3. 메시지 히스토리 로드 ──────────────────────────────────────────────
+    final history = await _service!.fetchHistory(roomId);
     if (mounted) {
       setState(() {
         _messages.addAll(history);
@@ -61,36 +72,62 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       });
     }
 
-    await _service.connect(widget.user.name);
+    // ── 4. WebSocket 연결 ────────────────────────────────────────────────────
+    await _service!.connect(roomId);
 
+    // ── 5. 초기 메시지 전송 (도움 화면에서 진입 시) ─────────────────────────
     if (widget.initialMessage != null && mounted) {
-      _service.send(widget.initialMessage!);
+      _service!.send(widget.initialMessage!);
       _scrollToBottom();
     }
+  }
+
+  /// 두 유저의 채팅방 ID를 REST API로 확보.
+  /// 서버 연결 불가 또는 ID 미확정 시 상대방 user.id(또는 name)를 fallback으로 사용.
+  Future<String> _resolveRoomId() async {
+    try {
+      final me = await UserService.loadUser(syncFromServer: false);
+      final myId = int.tryParse(me?.id ?? '') ?? 0;
+      final otherId = int.tryParse(widget.user.id) ?? 0;
+
+      if (myId > 0 && otherId > 0) {
+        final res = await ApiClient.post('/chat/rooms', {
+          'user_id_a': myId,
+          'user_id_b': otherId,
+        });
+        return res['room_id'].toString();
+      }
+    } catch (_) {
+      // 서버 미연결 / ID 미확정 → fallback
+    }
+    // fallback: 목(mock) 또는 개발 중일 때
+    return widget.user.id.isNotEmpty ? widget.user.id : widget.user.name;
   }
 
   @override
   void dispose() {
     _messageSub?.cancel();
-    _service.disconnect();
-    _service.dispose();
+    _service?.disconnect();
+    _service?.dispose();
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
   void _sendMessage() {
+    if (_service == null) return;
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
     if (_showSuggestions) setState(() => _showSuggestions = false);
-    _service.send(text);
+    _service!.send(text);
     _scrollToBottom();
   }
 
   void _sendSuggestion(String text) {
+    if (_service == null) return;
     setState(() => _showSuggestions = false);
-    _service.send(text);
+    _service!.send(text);
     _scrollToBottom();
   }
 
@@ -166,8 +203,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         color: const Color(0xFFF0F4FF),
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                            color:
-                                AppTheme.primary.withValues(alpha: 0.25)),
+                            color: AppTheme.primary.withValues(alpha: 0.25)),
                       ),
                       child: Text(
                         text,
@@ -189,24 +225,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   }
 
   List<String> _getSuggestions() {
-    final isEn = context.locale.languageCode == 'en';
-    return isEn
-        ? [
-            'Hello! Nice to meet you 😊',
-            'What language do you want to learn?',
-            'What is your favorite food in Korea?',
-            'What do you usually do on weekends?',
-            'What are your interests?',
-            'How is your school life?',
-          ]
-        : [
-            '안녕하세요! 만나서 반가워요 😊',
-            '어떤 언어를 배우고 싶으세요?',
-            '한국에서 가장 좋아하는 음식이 뭐예요?',
-            '주말에 보통 뭐 하세요?',
-            '관심사가 뭐예요?',
-            '학교 생활은 어때요?',
-          ];
+    // 번역 JSON의 chat.suggestions 배열을 인덱스로 접근
+    return List.generate(
+      6,
+      (i) => 'chat.suggestions[$i]'.tr(),
+    );
   }
 
   void _scrollToBottom() {
@@ -322,10 +345,12 @@ class _ConnectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (key, color) = switch (state) {
-      ChatConnectionState.connecting => ('chat.connecting', AppTheme.textSecondary),
+      ChatConnectionState.connecting =>
+        ('chat.connecting', AppTheme.textSecondary),
       ChatConnectionState.connected => ('chat.connected', AppTheme.mint),
       ChatConnectionState.error => ('chat.conn_error', AppTheme.coral),
-      ChatConnectionState.disconnected => ('chat.offline', AppTheme.textSecondary),
+      ChatConnectionState.disconnected =>
+        ('chat.offline', AppTheme.textSecondary),
     };
 
     return Text(

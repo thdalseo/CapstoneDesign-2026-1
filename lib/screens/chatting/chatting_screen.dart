@@ -1,14 +1,106 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import '../../core/api_client.dart';
 import '../../models/match_user.dart';
+import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/chatting/chat_room_tile.dart';
 import 'chatting_room_screen.dart';
 
-class ChattingScreen extends StatelessWidget {
-  final List<MatchUser> users;
+class ChattingScreen extends StatefulWidget {
+  const ChattingScreen({super.key});
 
-  const ChattingScreen({super.key, required this.users});
+  @override
+  State<ChattingScreen> createState() => _ChattingScreenState();
+}
+
+class _ChattingScreenState extends State<ChattingScreen> {
+  List<_RoomInfo> _rooms = [];
+  bool _loading = true;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRooms();
+  }
+
+  Future<void> _fetchRooms() async {
+    setState(() {
+      _loading = true;
+      _hasError = false;
+    });
+    try {
+      final user = await UserService.loadUser(syncFromServer: false);
+      final myId = user?.id ?? '';
+      if (myId.isEmpty) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+
+      final list = await ApiClient.getList(
+        '/chat/rooms',
+        params: {'user_id': myId},
+      );
+
+      final rooms = list.cast<Map<String, dynamic>>().map((json) {
+        return _RoomInfo(
+          user: MatchUser(
+            id: json['other_user_id'] as String? ?? '',
+            name: json['other_user_name'] as String? ?? '',
+            country: json['other_user_country'] as String? ?? '',
+            major: json['other_user_major'] as String? ?? '',
+            year: json['other_user_year'] as String? ?? '',
+            interests: const [],
+            description: '',
+            matchPercent: 0,
+          ),
+          lastMessage: json['last_message'] as String?,
+          lastMessageTime: json['last_message_time'] as String?,
+        );
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _rooms = rooms;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  /// ISO 타임스탬프 → "오전 10:23" / "어제" / "5/20"
+  String _formatTime(String? iso) {
+    if (iso == null || iso.isEmpty) return '';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return '';
+    final local = dt.toLocal();
+    final now = DateTime.now();
+
+    if (local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day) {
+      final h = local.hour;
+      final m = local.minute.toString().padLeft(2, '0');
+      final ampm = h < 12 ? '오전' : '오후';
+      final h12 = h % 12 == 0 ? 12 : h % 12;
+      return '$ampm $h12:$m';
+    }
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    if (local.year == yesterday.year &&
+        local.month == yesterday.month &&
+        local.day == yesterday.day) {
+      return '어제';
+    }
+    return '${local.month}/${local.day}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +119,7 @@ class ChattingScreen extends StatelessWidget {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              if (users.isNotEmpty) ...[
+              if (_rooms.isNotEmpty) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding:
@@ -37,7 +129,7 @@ class ChattingScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    '${users.length}',
+                    '${_rooms.length}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -46,37 +138,69 @@ class ChattingScreen extends StatelessWidget {
                   ),
                 ),
               ],
+              const Spacer(),
+              // 새로고침 버튼
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded,
+                    size: 20, color: AppTheme.textSecondary),
+                onPressed: _fetchRooms,
+                tooltip: '새로고침',
+                visualDensity: VisualDensity.compact,
+              ),
             ],
           ),
         ),
-        users.isEmpty ? _buildEmpty() : _buildList(context),
+        if (_loading)
+          const Expanded(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.primary,
+                strokeWidth: 2,
+              ),
+            ),
+          )
+        else if (_hasError)
+          _buildError()
+        else if (_rooms.isEmpty)
+          _buildEmpty()
+        else
+          _buildList(context),
       ],
     );
   }
 
   Widget _buildList(BuildContext context) {
     return Expanded(
-      child: ListView.separated(
-        padding: const EdgeInsets.only(top: 8, bottom: 24),
-        itemCount: users.length,
-        separatorBuilder: (_, _) => Divider(
-          height: 1,
-          indent: 82,
-          endIndent: 20,
-          color: AppTheme.border,
-        ),
-        itemBuilder: (context, i) => ChatRoomTile(
-          user: users[i],
-          unreadCount: i == 0 ? 1 : 0,
-          lastMessage:
-              i == 0 ? '같이 이야기 많이 해요!' : '저도 반가워요! 잘 부탁드려요 😄',
-          lastMessageTime: i == 0 ? '오전 10:23' : '어제',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ChattingRoomScreen(user: users[i]),
-            ),
+      child: RefreshIndicator(
+        color: AppTheme.primary,
+        onRefresh: _fetchRooms,
+        child: ListView.separated(
+          padding: const EdgeInsets.only(top: 8, bottom: 24),
+          itemCount: _rooms.length,
+          separatorBuilder: (context, index) => Divider(
+            height: 1,
+            indent: 82,
+            endIndent: 20,
+            color: AppTheme.border,
           ),
+          itemBuilder: (context, i) {
+            final room = _rooms[i];
+            return ChatRoomTile(
+              user: room.user,
+              lastMessage: room.lastMessage,
+              lastMessageTime: _formatTime(room.lastMessageTime),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ChattingRoomScreen(user: room.user),
+                  ),
+                );
+                // 채팅방에서 돌아왔을 때 목록 갱신
+                _fetchRooms();
+              },
+            );
+          },
         ),
       ),
     );
@@ -125,4 +249,44 @@ class ChattingScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildError() {
+    return Expanded(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.wifi_off_rounded,
+                color: AppTheme.textSecondary, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              'chat.conn_error'.tr(),
+              style: const TextStyle(
+                  fontSize: 14, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: _fetchRooms,
+              child: Text('다시 시도',
+                  style: TextStyle(color: AppTheme.primary)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 내부 데이터 클래스 ────────────────────────────────────────────────────────
+
+class _RoomInfo {
+  final MatchUser user;
+  final String? lastMessage;
+  final String? lastMessageTime;
+
+  const _RoomInfo({
+    required this.user,
+    this.lastMessage,
+    this.lastMessageTime,
+  });
 }

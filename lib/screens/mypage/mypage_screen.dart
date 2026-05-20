@@ -94,9 +94,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 MyPageMenuItem(
                   icon: Icons.language_outlined,
                   label: 'mypage.language'.tr(),
-                  currentValue: context.locale.languageCode == 'ko'
-                      ? '한국어'
-                      : 'English',
+                  currentValue: const {
+                    'ko': '한국어',
+                    'en': 'English',
+                    'zh': '中文',
+                    'vi': 'Tiếng Việt',
+                    'ja': '日本語',
+                  }[context.locale.languageCode] ?? 'English',
                   onTap: () => _showLanguagePicker(context),
                 ),
               ],
@@ -129,6 +133,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final languages = [
       {'locale': const Locale('ko'), 'label': '한국어', 'flag': '🇰🇷'},
       {'locale': const Locale('en'), 'label': 'English', 'flag': '🇺🇸'},
+      {'locale': const Locale('zh'), 'label': '中文', 'flag': '🇨🇳'},
+      {'locale': const Locale('vi'), 'label': 'Tiếng Việt', 'flag': '🇻🇳'},
+      {'locale': const Locale('ja'), 'label': '日本語', 'flag': '🇯🇵'},
     ];
 
     showModalBottomSheet(
