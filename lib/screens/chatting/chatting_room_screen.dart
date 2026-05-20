@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/chat_message.dart';
 import '../../models/match_user.dart';
+import '../../models/user_model.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/chat_service_factory.dart';
 import '../../services/user_service.dart';
@@ -36,10 +37,17 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   bool _loadingHistory = true;
   bool _showSuggestions = true;
 
+  // AI 아이스브레이킹 제안
+  List<String> _suggestions = const [];
+  bool _loadingSuggestions = true;
+  UserModel? _myUser;
+
   @override
   void initState() {
     super.initState();
     _init();
+    // context.locale 접근은 첫 빌드 이후에 가능
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchSuggestions());
   }
 
   /// 1) 서비스 생성  2) 채팅방 ID 확보  3) 히스토리 로드  4) WebSocket 연결
@@ -48,6 +56,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     final svc = await ChatServiceFactory.create();
     if (!mounted) return;
     _service = svc;
+
+    // 내 프로필 로드 (아이스브레이킹용)
+    _myUser = await UserService.loadUser(syncFromServer: false);
 
     _service!.connectionState.listen((state) {
       if (mounted) setState(() => _connState = state);
@@ -131,6 +142,12 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     _scrollToBottom();
   }
 
+  Future<void> _refreshSuggestions() async {
+    if (!mounted) return;
+    setState(() => _loadingSuggestions = true);
+    await _fetchSuggestions();
+  }
+
   Widget _buildEmptyWithSuggestions() {
     return Center(
       child: Column(
@@ -177,59 +194,186 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 헤더: 라벨 + AI 배지 + 새로고침 + 닫기
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(
-              'chat.suggestion_label'.tr(),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
-              ),
+            child: Row(
+              children: [
+                Text(
+                  'chat.suggestion_label'.tr(),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                if (_loadingSuggestions)
+                  const SizedBox(
+                    width: 10,
+                    height: 10,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: AppTheme.primary,
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 9, color: AppTheme.primary),
+                        SizedBox(width: 3),
+                        Text(
+                          'AI',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Spacer(),
+                // 새로고침 버튼
+                GestureDetector(
+                  onTap: _loadingSuggestions ? null : _refreshSuggestions,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 15,
+                      color: _loadingSuggestions
+                          ? AppTheme.textSecondary.withValues(alpha: 0.4)
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                // 닫기 버튼
+                GestureDetector(
+                  onTap: () => setState(() => _showSuggestions = false),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 15,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: _getSuggestions().map((text) {
-                return Padding(
+          // 제안 칩 목록
+          if (_loadingSuggestions)
+            // 로딩 중: 스켈레톤 플레이스홀더
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(3, (i) => Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => _sendSuggestion(text),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F4FF),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(
-                            color: AppTheme.primary.withValues(alpha: 0.25)),
-                      ),
-                      child: Text(
-                        text,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.w500,
+                  child: Container(
+                    width: 120 + i * 20.0,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                )),
+              ),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _suggestions.map((text) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => _sendSuggestion(text),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F4FF),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                              color: AppTheme.primary.withValues(alpha: 0.25)),
+                        ),
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  List<String> _getSuggestions() {
-    // 번역 JSON의 chat.suggestions 배열을 인덱스로 접근
-    return List.generate(
-      6,
-      (i) => 'chat.suggestions[$i]'.tr(),
-    );
+  /// 서버에서 AI 아이스브레이킹 질문을 받아온다.
+  /// 실패 시 로컬 fallback(번역 JSON)을 사용한다.
+  Future<void> _fetchSuggestions() async {
+    if (!mounted) return;
+    final locale = context.locale.languageCode;
+    final me = _myUser;
+
+    try {
+      final res = await ApiClient.post('/chat/icebreaking', {
+        'my_name': me?.name ?? '',
+        'my_country': me?.countryFlag ?? '',
+        'my_major': me?.major ?? '',
+        'my_interests': me?.interests ?? [],
+        'my_purposes': me?.exchangePurposes ?? [],
+        'my_personalities': me?.personalities ?? [],
+        'other_name': widget.user.name,
+        'other_country': widget.user.country,
+        'other_major': widget.user.major,
+        'other_interests': widget.user.interests,
+        'locale': locale,
+      });
+
+      final questions = (res['questions'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? [];
+
+      if (mounted) {
+        setState(() {
+          _suggestions = questions.isNotEmpty ? questions : _fallbackSuggestions();
+          _loadingSuggestions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _suggestions = _fallbackSuggestions();
+          _loadingSuggestions = false;
+        });
+      }
+    }
+  }
+
+  /// 번역 JSON 기반 정적 fallback 제안
+  List<String> _fallbackSuggestions() {
+    return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
   }
 
   void _scrollToBottom() {
