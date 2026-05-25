@@ -3,6 +3,7 @@ uvicorn[standard]
 sqlalchemy
 python-dotenv
 bcrypt
+google-genai
 # MySQL 사용 시 아래 두 줄 주석 해제
 # pymysql
 # cryptography
