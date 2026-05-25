@@ -46,6 +46,12 @@ class UserModel {
   // "🇰🇷 대한민국" → "🇰🇷"
   String get countryFlag => country.split(' ').first;
 
+  // "🇰🇷 대한민국" → "대한민국"
+  String get countryName {
+    final parts = country.split(' ');
+    return parts.length > 1 ? parts.skip(1).join(' ') : country;
+  }
+
   bool get isProfileComplete =>
       year.isNotEmpty &&
       interests.isNotEmpty &&

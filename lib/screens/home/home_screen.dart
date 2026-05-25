@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
 import '../../services/match_service.dart';
@@ -31,6 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<MatchUser> _matchList = [];
   bool _loadingMatches = false;
 
+  static const _matchedKey = 'matched_user_ids';
+
   @override
   void initState() {
     super.initState();
@@ -43,9 +46,33 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() => _currentUser = user);
       if (user != null && user.isProfileComplete) {
-        _loadMatches(user.email);
+        await _loadMatches(user.email);  // 먼저 목록 로드
+        await _loadMatchedUsers();       // 그 다음 매칭 상태 복원
       }
     }
+  }
+
+  /// SharedPreferences에서 매칭된 유저 ID 목록을 복원
+  Future<void> _loadMatchedUsers() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = prefs.getStringList(_matchedKey) ?? [];
+    if (mounted && ids.isNotEmpty) {
+      setState(() {
+        _matchedUsers.clear();
+        _matchedUsers.addAll(
+          _matchList.where((u) => ids.contains(u.id)),
+        );
+      });
+    }
+  }
+
+  /// 매칭된 유저 ID 목록을 SharedPreferences에 저장
+  Future<void> _saveMatchedUsers() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _matchedKey,
+      _matchedUsers.map((u) => u.id).toList(),
+    );
   }
 
   Future<void> _loadMatches(String email) async {
@@ -63,13 +90,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _toggleMatched(MatchUser user) {
     setState(() {
-      final idx = _matchedUsers.indexWhere((u) => u.name == user.name);
+      final idx = _matchedUsers.indexWhere((u) => u.id == user.id);
       if (idx == -1) {
         _matchedUsers.add(user);
       } else {
         _matchedUsers.removeAt(idx);
       }
     });
+    _saveMatchedUsers();
   }
 
   /// 채팅 시작 — 채팅방으로 이동 (채팅 목록은 서버에서 자동 관리)
