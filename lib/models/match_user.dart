@@ -18,4 +18,10 @@ class MatchUser {
     required this.description,
     required this.matchPercent,
   });
+
+  // "🇺🇸 미국" → "미국", "🇺🇸" → "" (이모지만 있으면 빈 문자열)
+  String get countryName {
+    final parts = country.split(' ');
+    return parts.length > 1 ? parts.skip(1).join(' ') : '';
+  }
 }

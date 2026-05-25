@@ -339,13 +339,20 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     try {
       final res = await ApiClient.post('/chat/icebreaking', {
         'my_name': me?.name ?? '',
-        'my_country': me?.countryFlag ?? '',
+        'my_country': me?.countryName ?? '',
         'my_major': me?.major ?? '',
         'my_interests': me?.interests ?? [],
         'my_purposes': me?.exchangePurposes ?? [],
         'my_personalities': me?.personalities ?? [],
+        'weight_purpose': me?.weightPurpose ?? 25,
+        'weight_interests': me?.weightInterests ?? 20,
+        'weight_language': me?.weightLanguage ?? 18,
+        'weight_personality': me?.weightPersonality ?? 17,
+        'weight_major': me?.weightMajor ?? 8,
+        'weight_year': me?.weightYear ?? 7,
+        'weight_nationality': me?.weightNationality ?? 5,
         'other_name': widget.user.name,
-        'other_country': widget.user.country,
+        'other_country': widget.user.countryName,
         'other_major': widget.user.major,
         'other_interests': widget.user.interests,
         'locale': locale,
@@ -376,6 +383,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
   }
 
+=======
+>>>>>>> 281480d (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
