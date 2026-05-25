@@ -4,6 +4,6 @@ sqlalchemy
 python-dotenv
 bcrypt
 google-genai
-# MySQL 사용 시 아래 두 줄 주석 해제
+# Uncomment the next two lines when using MySQL.
 # pymysql
 # cryptography
