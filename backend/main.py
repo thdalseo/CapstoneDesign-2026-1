@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import auth, chat, help_posts
+from app.routers import auth, chat, help_posts, matches
 
 app = FastAPI(title="Bridge API")
 
@@ -17,3 +17,4 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(help_posts.router)
 app.include_router(chat.router)
+app.include_router(matches.router)
