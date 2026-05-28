@@ -383,8 +383,6 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
   }
 
-=======
->>>>>>> 281480d (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {

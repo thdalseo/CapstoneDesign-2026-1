@@ -168,38 +168,6 @@ _LOCALE_NAMES = {
     "ja": "日本語",
 }
 
-<<<<<<< HEAD
-# 기본 fallback 질문 (언어별)
-_FALLBACK: dict[str, list[str]] = {
-    "ko": [
-        "서로 공통 관심사가 있는 것 같은데, 어떻게 시작하게 됐어요?",
-        "한국에서 가장 인상 깊었던 음식이나 장소가 있었나요?",
-        "언어 공부할 때 어떤 방법이 제일 효과적이었어요?",
-        "주말에 주로 어떻게 시간을 보내요?",
-    ],
-    "en": [
-        "It looks like we share some interests — how did you get into them?",
-        "What's been the most memorable food or place you've tried in Korea?",
-        "What's the most effective way you've found to study a language?",
-        "What do you usually do on weekends?",
-    ],
-    "zh": [
-        "我们好像有共同兴趣，你是怎么开始的呢？",
-        "在韩国最让你印象深刻的食物或地方是什么？",
-        "你觉得学语言最有效的方法是什么？",
-        "周末通常怎么度过？",
-    ],
-    "vi": [
-        "Có vẻ chúng ta có chung sở thích — bạn bắt đầu như thế nào?",
-        "Món ăn hoặc địa điểm nào ở Hàn Quốc khiến bạn ấn tượng nhất?",
-        "Bạn thấy cách nào học ngôn ngữ hiệu quả nhất?",
-        "Cuối tuần bạn thường làm gì?",
-    ],
-    "ja": [
-        "共通の趣味がありそうですね。きっかけは何でしたか？",
-        "韓国で一番印象に残った食べ物や場所はありますか？",
-        "語学学習で一番効果的だと思う方法は何ですか？",
-=======
 # 기본 fallback 질문 (언어별, 1인칭 시점)
 _FALLBACK: dict[str, list[str]] = {
     "ko": [
@@ -230,31 +198,15 @@ _FALLBACK: dict[str, list[str]] = {
         "私も旅行が大好きなんですが、一番印象に残った場所はどこですか？",
         "韓国に来てから、一番印象に残った食べ物や場所はありますか？",
         "私はドラマを見て語学を勉強しているんですが、どんな方法が効果的でしたか？",
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
         "週末はどんなふうに過ごしていますか？",
     ],
 }
 
 
-<<<<<<< HEAD
-def _build_prompt(req: IcebreakingRequest, lang_name: str) -> str:
-    my_info = (
-        f"이름: {req.my_name}, 국적: {req.my_country}, 전공: {req.my_major}, "
-        f"관심사: {', '.join(req.my_interests) or '없음'}, "
-        f"교류목적: {', '.join(req.my_purposes) or '없음'}, "
-        f"성향: {', '.join(req.my_personalities) or '없음'}"
-    )
-    other_info = (
-        f"이름: {req.other_name}, 국적: {req.other_country}, 전공: {req.other_major}, "
-        f"관심사: {', '.join(req.other_interests) or '없음'}"
-    )
-    return f"""두 사람이 처음 대화를 시작합니다. 자연스러운 대화 시작 질문 4개를 만들어주세요.
-=======
 _PROMPT_TEMPLATE = {
     "ko": """\
 사용자 A가 사용자 B에게 처음으로 말을 거는 상황입니다.
 사용자 A 입장에서 B에게 직접 건네는 자연스러운 첫 마디 질문 4개를 한국어로 만들어주세요.
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
 
 [사용자 A]
 {my_info}
@@ -263,43 +215,6 @@ _PROMPT_TEMPLATE = {
 {other_info}
 
 조건:
-<<<<<<< HEAD
-- 두 사람의 공통점이나 서로 보완되는 부분을 활용할 것
-- 짧고 자연스러운 구어체
-- 너무 개인적이거나 민감한 질문 제외
-- 반드시 {lang_name}로 작성
-- JSON 형식만 반환: {{"questions": ["질문1", "질문2", "질문3", "질문4"]}}"""
-
-
-async def _call_groq(prompt: str, api_key: str) -> list[str]:
-    from openai import OpenAI
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://api.groq.com/openai/v1",
-    )
-    response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        temperature=0.8,
-        max_tokens=400,
-    )
-    data = json.loads(response.choices[0].message.content)
-    return data.get("questions", [])
-
-
-async def _call_openai(prompt: str, api_key: str) -> list[str]:
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        temperature=0.8,
-        max_tokens=400,
-    )
-    data = json.loads(response.choices[0].message.content)
-=======
 - 질문만 작성할 것. 사족·겸손 표현·자기소개 절대 금지 (예: "저는 잘 모르지만", "아는 게 별로 없는데" 등)
 - "두 분", "서로", "두 사람" 같은 외부 시점 표현 금지
 - 이름 뒤 호칭("씨" 등) 붙이지 말 것
@@ -496,62 +411,30 @@ async def _call_gemini(prompt: str, api_key: str) -> list[str]:
         ),
     )
     data = json.loads(response.text)
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
     return data.get("questions", [])
 
 
 @router.post("/chat/icebreaking")
 async def get_icebreaking_questions(req: IcebreakingRequest):
     """두 유저 프로필을 바탕으로 AI 아이스브레이킹 질문 4개를 생성한다.
-<<<<<<< HEAD
-    Groq → OpenAI → fallback 순으로 시도한다."""
-=======
     Gemini → fallback 순으로 시도한다."""
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
 
     locale = req.locale if req.locale in _LOCALE_NAMES else "ko"
     lang_name = _LOCALE_NAMES[locale]
     fallback = _FALLBACK.get(locale, _FALLBACK["ko"])
 
-<<<<<<< HEAD
-    groq_key   = os.getenv("GROQ_API_KEY",   "").strip()
-    openai_key = os.getenv("OPENAI_API_KEY", "").strip()
-
-    if not groq_key and not openai_key:
-=======
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not gemini_key:
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
         return {"questions": fallback}
 
     prompt = _build_prompt(req, lang_name)
 
-<<<<<<< HEAD
-    # 1순위: Groq (무료)
-    if groq_key:
-        try:
-            questions = await _call_groq(prompt, groq_key)
-            if questions:
-                return {"questions": questions}
-        except Exception as e:
-            print(f"[icebreaking] Groq 실패: {e}")
-
-    # 2순위: OpenAI
-    if openai_key:
-        try:
-            questions = await _call_openai(prompt, openai_key)
-            if questions:
-                return {"questions": questions}
-        except Exception as e:
-            print(f"[icebreaking] OpenAI 실패: {e}")
-=======
     try:
         questions = await _call_gemini(prompt, gemini_key)
         if questions:
             return {"questions": questions}
     except Exception as e:
         print(f"[icebreaking] Gemini 실패: {e}")
->>>>>>> 55d73aa (feat: 아이스브레이킹 개선 및 매칭 상태 저장)
 
     return {"questions": fallback}
 
