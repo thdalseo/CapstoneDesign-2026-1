@@ -48,6 +48,13 @@ def _user_dict(user: User) -> dict:
         "exchange_purposes": [p.purpose for p in user.exchange_purposes],
         "personalities": [p.personality for p in user.personalities],
         "languages": [l.language for l in user.languages],
+        "weight_purpose": user.weight_purpose,
+        "weight_interests": user.weight_interests,
+        "weight_language": user.weight_language,
+        "weight_personality": user.weight_personality,
+        "weight_major": user.weight_major,
+        "weight_year": user.weight_year,
+        "weight_nationality": user.weight_nationality,
     }
 
 
@@ -86,6 +93,13 @@ class UpdateProfileRequest(BaseModel):
     exchange_purposes: Optional[List[str]] = None
     personalities: Optional[List[str]] = None
     languages: Optional[List[str]] = None
+    weight_purpose: Optional[int] = None
+    weight_interests: Optional[int] = None
+    weight_language: Optional[int] = None
+    weight_personality: Optional[int] = None
+    weight_major: Optional[int] = None
+    weight_year: Optional[int] = None
+    weight_nationality: Optional[int] = None
 
 
 # ── endpoints ─────────────────────────────────────────────────────────────────
@@ -222,6 +236,22 @@ def update_profile(req: UpdateProfileRequest, db: Session = Depends(get_db)):
         db.query(UserLanguage).filter(UserLanguage.user_id == user.id).delete()
         for item in req.languages:
             db.add(UserLanguage(user_id=user.id, language=item))
+
+    # 매칭 가중치
+    if req.weight_purpose is not None:
+        user.weight_purpose = req.weight_purpose
+    if req.weight_interests is not None:
+        user.weight_interests = req.weight_interests
+    if req.weight_language is not None:
+        user.weight_language = req.weight_language
+    if req.weight_personality is not None:
+        user.weight_personality = req.weight_personality
+    if req.weight_major is not None:
+        user.weight_major = req.weight_major
+    if req.weight_year is not None:
+        user.weight_year = req.weight_year
+    if req.weight_nationality is not None:
+        user.weight_nationality = req.weight_nationality
 
     db.commit()
     db.refresh(user)

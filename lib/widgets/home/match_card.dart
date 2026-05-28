@@ -282,53 +282,53 @@ class _BodyState extends State<_Body> {
 
           // 자기소개
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.user.description,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    color: AppTheme.textPrimary,
-                    height: 1.7,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (_showTranslation && _translatedDesc != null) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4FF),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: AppTheme.primary.withValues(alpha: 0.2)),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.user.description,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color: AppTheme.textPrimary,
+                      height: 1.7,
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.translate_rounded,
-                            size: 12, color: AppTheme.primary),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            _translatedDesc!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textPrimary,
-                              height: 1.45,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_showTranslation && _translatedDesc != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F4FF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: AppTheme.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.translate_rounded,
+                              size: 12, color: AppTheme.primary),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              _translatedDesc!,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppTheme.textPrimary,
+                                height: 1.45,
+                              ),
                             ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           // 번역 버튼 (Expanded 밖)

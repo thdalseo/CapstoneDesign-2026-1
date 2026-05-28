@@ -148,58 +148,6 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     await _fetchSuggestions();
   }
 
-  /// 서버에서 AI 아이스브레이킹 질문을 받아온다.
-  Future<void> _fetchSuggestions() async {
-    if (!mounted) return;
-    final locale = context.locale.languageCode;
-    final me = _myUser;
-
-    try {
-      final res = await ApiClient.post('/chat/icebreaking', {
-        'my_name': me?.name ?? '',
-        'my_country': me?.countryName ?? '',
-        'my_major': me?.major ?? '',
-        'my_interests': me?.interests ?? [],
-        'my_purposes': me?.exchangePurposes ?? [],
-        'my_personalities': me?.personalities ?? [],
-        'weight_major': me?.weightMajor ?? 17,
-        'weight_interests': me?.weightInterests ?? 17,
-        'weight_personality': me?.weightPersonality ?? 17,
-        'weight_language': me?.weightLanguage ?? 17,
-        'weight_purpose': me?.weightPurpose ?? 17,
-        'weight_nationality': me?.weightNationality ?? 15,
-        'other_name': widget.user.name,
-        'other_country': widget.user.countryName,
-        'other_major': widget.user.major,
-        'other_interests': widget.user.interests,
-        'locale': locale,
-      });
-
-      final questions = (res['questions'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [];
-
-      if (mounted) {
-        setState(() {
-          _suggestions = questions.isNotEmpty ? questions : _fallbackSuggestions();
-          _loadingSuggestions = false;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _suggestions = _fallbackSuggestions();
-          _loadingSuggestions = false;
-        });
-      }
-    }
-  }
-
-  /// 번역 JSON 기반 정적 fallback 제안
-  List<String> _fallbackSuggestions() {
-    return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
-  }
-
   Widget _buildEmptyWithSuggestions() {
     return Center(
       child: Column(
@@ -271,7 +219,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: AppTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(999),
@@ -279,7 +228,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome_rounded, size: 9, color: AppTheme.primary),
+                        Icon(Icons.auto_awesome_rounded,
+                            size: 9, color: AppTheme.primary),
                         SizedBox(width: 3),
                         Text(
                           'AI',
@@ -313,7 +263,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                   onTap: () => setState(() => _showSuggestions = false),
                   child: const Padding(
                     padding: EdgeInsets.all(4),
-                    child: Icon(Icons.close_rounded, size: 15, color: AppTheme.textSecondary),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 15,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -321,6 +275,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           ),
           // 제안 칩 목록
           if (_loadingSuggestions)
+            // 로딩 중: 스켈레톤 플레이스홀더
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -347,11 +302,13 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     child: GestureDetector(
                       onTap: () => _sendSuggestion(text),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F4FF),
                           borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.25)),
+                          border: Border.all(
+                              color: AppTheme.primary.withValues(alpha: 0.25)),
                         ),
                         child: Text(
                           text,
@@ -370,6 +327,60 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         ],
       ),
     );
+  }
+
+  /// 서버에서 AI 아이스브레이킹 질문을 받아온다.
+  /// 실패 시 로컬 fallback(번역 JSON)을 사용한다.
+  Future<void> _fetchSuggestions() async {
+    if (!mounted) return;
+    final locale = context.locale.languageCode;
+    final me = _myUser;
+
+    try {
+      final res = await ApiClient.post('/chat/icebreaking', {
+        'my_name': me?.name ?? '',
+        'my_country': me?.countryName ?? '',
+        'my_major': me?.major ?? '',
+        'my_interests': me?.interests ?? [],
+        'my_purposes': me?.exchangePurposes ?? [],
+        'my_personalities': me?.personalities ?? [],
+        'weight_purpose': me?.weightPurpose ?? 25,
+        'weight_interests': me?.weightInterests ?? 20,
+        'weight_language': me?.weightLanguage ?? 18,
+        'weight_personality': me?.weightPersonality ?? 17,
+        'weight_major': me?.weightMajor ?? 8,
+        'weight_year': me?.weightYear ?? 7,
+        'weight_nationality': me?.weightNationality ?? 5,
+        'other_name': widget.user.name,
+        'other_country': widget.user.countryName,
+        'other_major': widget.user.major,
+        'other_interests': widget.user.interests,
+        'locale': locale,
+      });
+
+      final questions = (res['questions'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? [];
+
+      if (mounted) {
+        setState(() {
+          _suggestions = questions.isNotEmpty ? questions : _fallbackSuggestions();
+          _loadingSuggestions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _suggestions = _fallbackSuggestions();
+          _loadingSuggestions = false;
+        });
+      }
+    }
+  }
+
+  /// 번역 JSON 기반 정적 fallback 제안
+  List<String> _fallbackSuggestions() {
+    return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
   }
 
   void _scrollToBottom() {

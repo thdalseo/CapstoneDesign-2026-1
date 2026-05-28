@@ -56,13 +56,14 @@ class IcebreakingRequest(BaseModel):
     my_interests: List[str] = []
     my_purposes: List[str] = []
     my_personalities: List[str] = []
-    # 매칭 가중치 (합계 = 100, 기본값은 균등 배분)
-    weight_major: int = 17
-    weight_interests: int = 17
+    # 매칭 가중치 (합계 = 100)
+    weight_purpose: int = 25
+    weight_interests: int = 20
+    weight_language: int = 18
     weight_personality: int = 17
-    weight_language: int = 17
-    weight_purpose: int = 17
-    weight_nationality: int = 15
+    weight_major: int = 8
+    weight_year: int = 7
+    weight_nationality: int = 5
     # 상대방 정보
     other_name: str
     other_country: str

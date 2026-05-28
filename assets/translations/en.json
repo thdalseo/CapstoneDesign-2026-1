@@ -25,7 +25,9 @@
     "profile_incomplete_title": "Complete your profile!",
     "profile_incomplete_desc": "Set your grade, interests, and exchange purpose\nto find friends who match you.",
     "go_to_profile": "Set up profile",
-    "no_matches": "No recommendations yet"
+    "no_matches": "No recommendations yet",
+    "next_recommendations": "See next recommendations",
+    "back_to_top": "Back to top"
   },
 
   "matching": {
@@ -185,6 +187,8 @@
     "personality_desc": "Similar personality ratio",
     "language_desc": "Common languages ratio",
     "purpose_desc": "Exchange purpose match",
+    "year": "Year",
+    "year_desc": "Similar year of study",
     "nationality_desc": "Local ↔ International",
     "level_low": "Low",
     "level_medium": "Medium",

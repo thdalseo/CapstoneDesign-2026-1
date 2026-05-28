@@ -24,11 +24,12 @@ class MatchService {
 
   static Future<void> saveWeights(
     String email, {
-    required int weightMajor,
-    required int weightInterests,
-    required int weightPersonality,
-    required int weightLanguage,
     required int weightPurpose,
+    required int weightInterests,
+    required int weightLanguage,
+    required int weightPersonality,
+    required int weightMajor,
+    required int weightYear,
     required int weightNationality,
   }) async {
     if (_useMock) return; // mock 모드에서는 로컬 저장만
@@ -36,11 +37,12 @@ class MatchService {
     await ApiClient.put(
       '$_usersBase/${Uri.encodeComponent(email)}/weights',
       {
-        'weight_major': weightMajor,
-        'weight_interests': weightInterests,
-        'weight_personality': weightPersonality,
-        'weight_language': weightLanguage,
         'weight_purpose': weightPurpose,
+        'weight_interests': weightInterests,
+        'weight_language': weightLanguage,
+        'weight_personality': weightPersonality,
+        'weight_major': weightMajor,
+        'weight_year': weightYear,
         'weight_nationality': weightNationality,
       },
     );

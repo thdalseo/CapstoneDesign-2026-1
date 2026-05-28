@@ -25,7 +25,9 @@
     "profile_incomplete_title": "プロフィールを完成させてください！",
     "profile_incomplete_desc": "学年・興味・交流目的を設定すると\n相性のいいお友達が見つかります。",
     "go_to_profile": "プロフィール設定へ",
-    "no_matches": "まだおすすめがいません"
+    "no_matches": "まだおすすめがいません",
+    "next_recommendations": "次のおすすめを見る",
+    "back_to_top": "最初に戻る"
   },
 
   "matching": {
@@ -185,6 +187,8 @@
     "personality_desc": "似た性格の割合",
     "language_desc": "共通言語の割合",
     "purpose_desc": "交流目的の一致度",
+    "year": "学年",
+    "year_desc": "近い学年の割合",
     "nationality_desc": "韓国人 ↔ 外国人",
     "level_low": "低い",
     "level_medium": "普通",

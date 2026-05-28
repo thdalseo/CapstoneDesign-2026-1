@@ -24,4 +24,29 @@ class MatchUser {
     final parts = country.split(' ');
     return parts.length > 1 ? parts.skip(1).join(' ') : '';
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'country': country,
+        'major': major,
+        'year': year,
+        'interests': interests,
+        'description': description,
+        'matchPercent': matchPercent,
+      };
+
+  factory MatchUser.fromJson(Map<String, dynamic> json) => MatchUser(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        country: json['country'] as String? ?? '',
+        major: json['major'] as String? ?? '',
+        year: json['year'] as String? ?? '',
+        interests: (json['interests'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        description: json['description'] as String? ?? '',
+        matchPercent: json['matchPercent'] as int? ?? 0,
+      );
 }

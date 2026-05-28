@@ -25,7 +25,9 @@
     "profile_incomplete_title": "프로필을 완성해주세요!",
     "profile_incomplete_desc": "학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.",
     "go_to_profile": "프로필 설정하러 가기",
-    "no_matches": "아직 추천할 친구가 없어요"
+    "no_matches": "아직 추천할 친구가 없어요",
+    "next_recommendations": "다음 추천 보기",
+    "back_to_top": "처음으로 돌아가기"
   },
 
   "matching": {
@@ -185,6 +187,8 @@
     "personality_desc": "비슷한 성향 비율",
     "language_desc": "공통 언어 비율",
     "purpose_desc": "교류 목적 일치도",
+    "year": "학년",
+    "year_desc": "비슷한 학년 비율",
     "nationality_desc": "내국인 ↔ 외국인 여부",
     "level_low": "낮음",
     "level_medium": "보통",
