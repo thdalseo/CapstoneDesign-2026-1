@@ -14,11 +14,12 @@ class UserModel {
   final String? avatarUrl;
 
   // 매칭 알고리즘 가중치 (합계 = 100)
-  final int weightMajor;
-  final int weightInterests;
-  final int weightPersonality;
-  final int weightLanguage;
   final int weightPurpose;
+  final int weightInterests;
+  final int weightLanguage;
+  final int weightPersonality;
+  final int weightMajor;
+  final int weightYear;
   final int weightNationality;
 
   const UserModel({
@@ -35,12 +36,13 @@ class UserModel {
     this.description = '',
     required this.email,
     this.avatarUrl,
-    this.weightMajor = 12,
-    this.weightInterests = 20,
-    this.weightPersonality = 17,
-    this.weightLanguage = 18,
     this.weightPurpose = 25,
-    this.weightNationality = 8,
+    this.weightInterests = 20,
+    this.weightLanguage = 18,
+    this.weightPersonality = 17,
+    this.weightMajor = 8,
+    this.weightYear = 7,
+    this.weightNationality = 5,
   });
 
   // "🇰🇷 대한민국" → "🇰🇷"
@@ -71,11 +73,12 @@ class UserModel {
         'description': description,
         'email': email,
         'avatarUrl': avatarUrl,
-        'weightMajor': weightMajor,
-        'weightInterests': weightInterests,
-        'weightPersonality': weightPersonality,
-        'weightLanguage': weightLanguage,
         'weightPurpose': weightPurpose,
+        'weightInterests': weightInterests,
+        'weightLanguage': weightLanguage,
+        'weightPersonality': weightPersonality,
+        'weightMajor': weightMajor,
+        'weightYear': weightYear,
         'weightNationality': weightNationality,
       };
 
@@ -108,12 +111,13 @@ class UserModel {
       description: str('description'),
       email: str('email'),
       avatarUrl: (json['avatar_url'] ?? json['avatarUrl']) as String?,
-      weightMajor: intVal('weight_major', 'weightMajor', 12),
-      weightInterests: intVal('weight_interests', 'weightInterests', 20),
-      weightPersonality: intVal('weight_personality', 'weightPersonality', 17),
-      weightLanguage: intVal('weight_language', 'weightLanguage', 18),
       weightPurpose: intVal('weight_purpose', 'weightPurpose', 25),
-      weightNationality: intVal('weight_nationality', 'weightNationality', 8),
+      weightInterests: intVal('weight_interests', 'weightInterests', 20),
+      weightLanguage: intVal('weight_language', 'weightLanguage', 18),
+      weightPersonality: intVal('weight_personality', 'weightPersonality', 17),
+      weightMajor: intVal('weight_major', 'weightMajor', 8),
+      weightYear: intVal('weight_year', 'weightYear', 7),
+      weightNationality: intVal('weight_nationality', 'weightNationality', 5),
     );
   }
 
@@ -131,11 +135,12 @@ class UserModel {
     String? description,
     String? email,
     String? avatarUrl,
-    int? weightMajor,
-    int? weightInterests,
-    int? weightPersonality,
-    int? weightLanguage,
     int? weightPurpose,
+    int? weightInterests,
+    int? weightLanguage,
+    int? weightPersonality,
+    int? weightMajor,
+    int? weightYear,
     int? weightNationality,
   }) =>
       UserModel(
@@ -152,11 +157,12 @@ class UserModel {
         description: description ?? this.description,
         email: email ?? this.email,
         avatarUrl: avatarUrl ?? this.avatarUrl,
-        weightMajor: weightMajor ?? this.weightMajor,
-        weightInterests: weightInterests ?? this.weightInterests,
-        weightPersonality: weightPersonality ?? this.weightPersonality,
-        weightLanguage: weightLanguage ?? this.weightLanguage,
         weightPurpose: weightPurpose ?? this.weightPurpose,
+        weightInterests: weightInterests ?? this.weightInterests,
+        weightLanguage: weightLanguage ?? this.weightLanguage,
+        weightPersonality: weightPersonality ?? this.weightPersonality,
+        weightMajor: weightMajor ?? this.weightMajor,
+        weightYear: weightYear ?? this.weightYear,
         weightNationality: weightNationality ?? this.weightNationality,
       );
 }

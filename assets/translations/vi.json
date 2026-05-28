@@ -25,7 +25,9 @@
     "profile_incomplete_title": "Hãy hoàn thiện hồ sơ!",
     "profile_incomplete_desc": "Thiết lập năm học, sở thích và mục đích giao lưu\nđể tìm bạn phù hợp.",
     "go_to_profile": "Thiết lập hồ sơ",
-    "no_matches": "Chưa có gợi ý nào"
+    "no_matches": "Chưa có gợi ý nào",
+    "next_recommendations": "Xem gợi ý tiếp theo",
+    "back_to_top": "Quay lại đầu"
   },
 
   "matching": {
@@ -185,6 +187,8 @@
     "personality_desc": "Tỷ lệ tính cách tương đồng",
     "language_desc": "Tỷ lệ ngôn ngữ chung",
     "purpose_desc": "Mức độ phù hợp mục đích",
+    "year": "Năm học",
+    "year_desc": "Tỷ lệ năm học tương đồng",
     "nationality_desc": "Người bản địa ↔ Người nước ngoài",
     "level_low": "Thấp",
     "level_medium": "Trung bình",

@@ -38,6 +38,15 @@ class User(Base):
     is_international = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    # 매칭 가중치 (합계 = 100)
+    weight_purpose      = Column(Integer, nullable=False, default=25)
+    weight_interests    = Column(Integer, nullable=False, default=20)
+    weight_language     = Column(Integer, nullable=False, default=18)
+    weight_personality  = Column(Integer, nullable=False, default=17)
+    weight_major        = Column(Integer, nullable=False, default=8)
+    weight_year         = Column(Integer, nullable=False, default=7)
+    weight_nationality  = Column(Integer, nullable=False, default=5)
+
     interests = relationship(
         "UserInterest", back_populates="user", cascade="all, delete-orphan"
     )

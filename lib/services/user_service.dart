@@ -26,27 +26,15 @@ class UserService {
   // ── 서버 동기화 ───────────────────────────────────────────────────────────
 
   /// 서버에서 최신 프로필을 가져와 로컬 캐시에 반영.
-  /// 가중치(weightXxx)는 서버에 없으므로 로컬 값을 유지.
   static Future<UserModel?> _fetchFromServer(String email) async {
     final res = await ApiClient.get(
       '/auth/profile',
       params: {'email': email},
     );
     final serverData = res['user'] as Map<String, dynamic>;
-
-    // 로컬 가중치 보존 — 서버에는 weight 필드가 없음
-    final local = await _loadLocal();
-    final merged = UserModel.fromJson({
-      ...serverData,
-      'weightMajor': local?.weightMajor ?? 12,
-      'weightInterests': local?.weightInterests ?? 20,
-      'weightPersonality': local?.weightPersonality ?? 17,
-      'weightLanguage': local?.weightLanguage ?? 18,
-      'weightPurpose': local?.weightPurpose ?? 25,
-      'weightNationality': local?.weightNationality ?? 8,
-    });
-    await _saveLocal(merged);
-    return merged;
+    final user = UserModel.fromJson(serverData);
+    await _saveLocal(user);
+    return user;
   }
 
   /// 변경된 프로필을 서버에 저장.
@@ -62,6 +50,13 @@ class UserService {
       'exchange_purposes': user.exchangePurposes,
       'personalities': user.personalities,
       'languages': user.languages,
+      'weight_purpose': user.weightPurpose,
+      'weight_interests': user.weightInterests,
+      'weight_language': user.weightLanguage,
+      'weight_personality': user.weightPersonality,
+      'weight_major': user.weightMajor,
+      'weight_year': user.weightYear,
+      'weight_nationality': user.weightNationality,
     });
   }
 
@@ -101,6 +96,7 @@ class UserService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
     await prefs.remove(_credentialsKey);
+    await prefs.setBool('isLoggedIn', false);
   }
 
   // ── 자격증명 (로그인 상태 유지) ───────────────────────────────────────────

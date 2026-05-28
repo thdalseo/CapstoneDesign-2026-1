@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,14 +27,26 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  int _currentPage = 0;
+  int _currentPage = 0;   // PageView 내 현재 카드 인덱스
+  int _groupIndex = 0;    // 5명 묶음 그룹 인덱스
   late final PageController _pageController;
   UserModel? _currentUser;
   final List<MatchUser> _matchedUsers = [];   // 매칭 목록 (퍼즐 버튼)
   List<MatchUser> _matchList = [];
   bool _loadingMatches = false;
 
-  static const _matchedKey = 'matched_user_ids';
+  /// 현재 그룹에서 보여줄 5명
+  List<MatchUser> get _visibleMatches {
+    final start = _groupIndex * 5;
+    if (start >= _matchList.length) return [];
+    return _matchList.skip(start).take(5).toList();
+  }
+
+  /// 전체 그룹 수
+  int get _totalGroups =>
+      _matchList.isEmpty ? 0 : ((_matchList.length - 1) ~/ 5) + 1;
+
+  static const _matchedKey = 'matched_users_json';
 
   @override
   void initState() {
@@ -45,33 +59,41 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = await UserService.loadUser();
     if (mounted) {
       setState(() => _currentUser = user);
+      // 매칭 목록은 프로필 완성 여부와 무관하게 복원 (로그인 유지용)
+      await _loadMatchedUsers();
       if (user != null && user.isProfileComplete) {
-        await _loadMatches(user.email);  // 먼저 목록 로드
-        await _loadMatchedUsers();       // 그 다음 매칭 상태 복원
+        await _loadMatches(user.email);
       }
     }
   }
 
-  /// SharedPreferences에서 매칭된 유저 ID 목록을 복원
+  /// SharedPreferences에서 매칭 유저 전체 데이터를 복원
+  /// → _matchList 의존 없이 독립적으로 동작
   Future<void> _loadMatchedUsers() async {
     final prefs = await SharedPreferences.getInstance();
-    final ids = prefs.getStringList(_matchedKey) ?? [];
-    if (mounted && ids.isNotEmpty) {
-      setState(() {
-        _matchedUsers.clear();
-        _matchedUsers.addAll(
-          _matchList.where((u) => ids.contains(u.id)),
-        );
-      });
+    final raw = prefs.getString(_matchedKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      if (mounted) {
+        setState(() {
+          _matchedUsers.clear();
+          _matchedUsers.addAll(
+            list.map((e) => MatchUser.fromJson(e as Map<String, dynamic>)),
+          );
+        });
+      }
+    } catch (_) {
+      // 파싱 실패 시 무시
     }
   }
 
-  /// 매칭된 유저 ID 목록을 SharedPreferences에 저장
+  /// 매칭 유저 전체 데이터를 JSON으로 저장
   Future<void> _saveMatchedUsers() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(
+    await prefs.setString(
       _matchedKey,
-      _matchedUsers.map((u) => u.id).toList(),
+      jsonEncode(_matchedUsers.map((u) => u.toJson()).toList()),
     );
   }
 
@@ -323,10 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: PageView.builder(
               controller: _pageController,
-              itemCount: _matchList.length,
+              itemCount: _visibleMatches.length,
               onPageChanged: (i) => setState(() => _currentPage = i),
               itemBuilder: (context, index) {
-                final user = _matchList[index];
+                final user = _visibleMatches[index];
                 return AnimatedBuilder(
                   animation: _pageController,
                   builder: (context, child) {
@@ -345,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: MatchCard(
                       user: user,
-                      isMatched: _matchedUsers.any((u) => u.name == user.name),
+                      isMatched: _matchedUsers.any((u) => u.id == user.id),
                       onMatchTap: () => _toggleMatched(user),
                     ),
                   ),
@@ -354,26 +376,58 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 페이지 인디케이터
+          // 페이지 인디케이터 + 다음 추천 버튼
           Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _matchList.length,
-                (index) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: _currentPage == index ? 9 : 7,
-                  height: _currentPage == index ? 9 : 7,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentPage == index
-                        ? AppTheme.primary
-                        : const Color(0xFFD0DCEF),
+            padding: const EdgeInsets.only(top: 4, bottom: 12),
+            child: Column(
+              children: [
+                // 인디케이터 (현재 그룹 내 카드 위치)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _visibleMatches.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 9 : 7,
+                      height: _currentPage == index ? 9 : 7,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _currentPage == index
+                            ? AppTheme.primary
+                            : const Color(0xFFD0DCEF),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+
+                // 다음 추천 보기 버튼 (5명 초과일 때만)
+                if (_matchList.length > 5) ...[
+                  const SizedBox(height: 6),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _groupIndex = (_groupIndex + 1) % _totalGroups;
+                        _currentPage = 0;
+                      });
+                      _pageController.jumpToPage(0);
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: Text(
+                      _groupIndex < _totalGroups - 1
+                          ? 'home.next_recommendations'.tr()
+                          : 'home.back_to_top'.tr(),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

@@ -223,7 +223,7 @@ class _HelpCardState extends State<HelpCard> {
                 ],
                 const SizedBox(height: 8),
 
-                // 작성자
+                // 작성자 + 도움주기 버튼
                 Row(
                   children: [
                     CircleAvatar(
@@ -279,14 +279,33 @@ class _HelpCardState extends State<HelpCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 12),
-                            _infoRow(Icons.place_outlined,
-                                widget.post['place'] as String? ?? ''),
-                            const SizedBox(height: 4),
-                            _infoRow(Icons.calendar_today_outlined,
-                                widget.post['date'] as String? ?? ''),
-                            const SizedBox(height: 4),
-                            _infoRow(Icons.access_time_outlined,
-                                widget.post['time'] as String? ?? ''),
+                            // 장소·날짜·시간 + 도움주기 버튼
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _infoRow(Icons.place_outlined,
+                                          widget.post['place'] as String? ?? ''),
+                                      const SizedBox(height: 4),
+                                      _infoRow(Icons.calendar_today_outlined,
+                                          widget.post['date'] as String? ?? ''),
+                                      const SizedBox(height: 4),
+                                      _infoRow(Icons.access_time_outlined,
+                                          widget.post['time'] as String? ?? ''),
+                                    ],
+                                  ),
+                                ),
+                                if (!isMyPost && !isCompleted) ...[
+                                  const SizedBox(width: 12),
+                                  _actionBtn('help.btn_help'.tr(),
+                                      AppTheme.mint, widget.onHelp),
+                                ],
+                              ],
+                            ),
                             if (memo.isNotEmpty) ...[
                               const SizedBox(height: 10),
                               Text(
@@ -300,25 +319,22 @@ class _HelpCardState extends State<HelpCard> {
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 12),
-                            Wrap(
-                              alignment: WrapAlignment.end,
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                if (isMyPost && !isCompleted) ...[
+                            if (isMyPost && !isCompleted) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                alignment: WrapAlignment.end,
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
                                   _actionBtn('help.btn_complete'.tr(),
                                       AppTheme.mint, widget.onComplete),
                                   _actionBtn('help.btn_edit'.tr(),
                                       AppTheme.primary, widget.onEdit),
                                   _actionBtn('help.btn_delete'.tr(),
                                       AppTheme.coral, widget.onDelete),
-                                ] else if (!isMyPost && !isCompleted) ...[
-                                  _actionBtn('help.btn_help'.tr(),
-                                      AppTheme.mint, widget.onHelp),
                                 ],
-                              ],
-                            ),
+                              ),
+                            ],
                           ],
                         )
                       : const SizedBox.shrink(),

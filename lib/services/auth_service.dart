@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../core/api_client.dart';
 import '../models/user_model.dart';
 import 'user_service.dart';
@@ -30,6 +32,8 @@ class AuthService {
 
     final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
     await UserService.saveUser(user);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
     return user;
   }
 
@@ -57,6 +61,8 @@ class AuthService {
 
     final user = UserModel.fromJson(res['user'] as Map<String, dynamic>);
     await UserService.saveUser(user);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
     return user;
   }
 }

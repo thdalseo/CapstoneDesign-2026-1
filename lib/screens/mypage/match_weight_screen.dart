@@ -79,6 +79,13 @@ const _kDefs = [
     icon: Icons.school_outlined,
   ),
   _WeightDef(
+    key: 'year',
+    labelKey: 'weight.year',
+    descKey: 'weight.year_desc',
+    color: Color(0xFF10B981),
+    icon: Icons.calendar_today_outlined,
+  ),
+  _WeightDef(
     key: 'nationality',
     labelKey: 'weight.nationality',
     descKey: 'weight.nationality_desc',
@@ -111,6 +118,7 @@ class _MatchWeightScreenState extends State<MatchWeightScreen> {
       _rawToLevel(widget.user.weightLanguage),
       _rawToLevel(widget.user.weightPersonality),
       _rawToLevel(widget.user.weightMajor),
+      _rawToLevel(widget.user.weightYear),
       _rawToLevel(widget.user.weightNationality),
     ];
   }
@@ -147,20 +155,22 @@ class _MatchWeightScreenState extends State<MatchWeightScreen> {
     try {
       await MatchService.saveWeights(
         widget.user.email,
-        weightMajor: w['major']!,
-        weightInterests: w['interests']!,
-        weightPersonality: w['personality']!,
-        weightLanguage: w['language']!,
         weightPurpose: w['purpose']!,
+        weightInterests: w['interests']!,
+        weightLanguage: w['language']!,
+        weightPersonality: w['personality']!,
+        weightMajor: w['major']!,
+        weightYear: w['year']!,
         weightNationality: w['nationality']!,
       );
 
       final updated = widget.user.copyWith(
-        weightMajor: w['major']!,
-        weightInterests: w['interests']!,
-        weightPersonality: w['personality']!,
-        weightLanguage: w['language']!,
         weightPurpose: w['purpose']!,
+        weightInterests: w['interests']!,
+        weightLanguage: w['language']!,
+        weightPersonality: w['personality']!,
+        weightMajor: w['major']!,
+        weightYear: w['year']!,
         weightNationality: w['nationality']!,
       );
       await UserService.saveUser(updated);

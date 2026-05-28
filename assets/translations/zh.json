@@ -25,7 +25,9 @@
     "profile_incomplete_title": "请完善您的个人资料！",
     "profile_incomplete_desc": "设置年级、兴趣和交流目的，\n即可找到与您匹配的朋友。",
     "go_to_profile": "去设置个人资料",
-    "no_matches": "暂无推荐好友"
+    "no_matches": "暂无推荐好友",
+    "next_recommendations": "查看更多推荐",
+    "back_to_top": "返回顶部"
   },
 
   "matching": {
@@ -185,6 +187,8 @@
     "personality_desc": "相似性格比例",
     "language_desc": "共同语言比例",
     "purpose_desc": "交流目的匹配度",
+    "year": "年级",
+    "year_desc": "相近年级比例",
     "nationality_desc": "本国人 ↔ 外国人",
     "level_low": "低",
     "level_medium": "中",
