@@ -148,7 +148,10 @@
   "match_card": {
     "match": "Match",
     "matched": "Matched",
-    "chat": "Chat"
+    "chat": "Chat",
+    "reason_hint": "Tap to see why we matched",
+    "reason_title": "Why we matched with {name}",
+    "reason_empty": "No matching reasons available"
   },
 
   "mypage": {

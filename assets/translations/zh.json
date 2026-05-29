@@ -148,7 +148,10 @@
   "match_card": {
     "match": "匹配",
     "matched": "已匹配",
-    "chat": "聊天"
+    "chat": "聊天",
+    "reason_hint": "点击查看匹配原因",
+    "reason_title": "推荐{name}的原因",
+    "reason_empty": "暂无匹配原因"
   },
 
   "mypage": {

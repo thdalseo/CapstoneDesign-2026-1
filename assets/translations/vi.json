@@ -148,7 +148,10 @@
   "match_card": {
     "match": "Kết nối",
     "matched": "Đã kết nối",
-    "chat": "Nhắn tin"
+    "chat": "Nhắn tin",
+    "reason_hint": "Nhấn để xem lý do ghép đôi",
+    "reason_title": "Lý do giới thiệu {name}",
+    "reason_empty": "Không có lý do ghép đôi"
   },
 
   "mypage": {

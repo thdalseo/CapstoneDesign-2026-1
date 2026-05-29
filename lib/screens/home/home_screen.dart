@@ -102,12 +102,59 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loadingMatches = true);
     try {
       final matches = await MatchService.fetchMatches(email);
-      if (mounted) setState(() => _matchList = matches);
+      final withReasons = matches
+          .map((m) => m.copyWith(matchReasons: _computeReasons(m)))
+          .toList();
+      if (mounted) setState(() => _matchList = withReasons);
     } catch (_) {
       // 서버 연결 실패 시 빈 목록 유지
     } finally {
       if (mounted) setState(() => _loadingMatches = false);
     }
+  }
+
+  /// 나와 매칭 상대를 비교해 이유 문구 목록을 생성
+  List<String> _computeReasons(MatchUser other) {
+    final me = _currentUser;
+    if (me == null) return [];
+    final reasons = <String>[];
+
+    // 1. 공통 관심사
+    final common =
+        me.interests.where((i) => other.interests.contains(i)).toList();
+    if (common.isNotEmpty) {
+      reasons.add('${common.take(2).join(', ')} 관심사가 일치해요');
+    }
+
+    // 2. 같은 전공
+    if (me.major.isNotEmpty && me.major == other.major) {
+      reasons.add('같은 전공이에요 (${me.major})');
+    }
+
+    // 3. 교류 목적 / 언어 교류
+    final otherIsKorean =
+        other.country.contains('대한민국') || other.countryName == '대한민국';
+    final myIsKorean = !me.isInternational;
+    if (myIsKorean != otherIsKorean) {
+      reasons.add('언어·문화 교류에 최적인 조합이에요');
+    } else if (other.countryName.isNotEmpty &&
+        other.countryName != me.countryName) {
+      reasons.add('다양한 문화적 배경을 가지고 있어요');
+    }
+
+    // 4. 매칭도 수준
+    if (other.matchPercent >= 85) {
+      reasons.add('전반적으로 매우 잘 맞는 상대예요 ✨');
+    } else if (other.matchPercent >= 70) {
+      reasons.add('여러 면에서 잘 맞는 상대예요');
+    }
+
+    // 기본 문구 (이유가 없을 때)
+    if (reasons.isEmpty) {
+      reasons.add('새로운 인연이 될 수 있어요');
+    }
+
+    return reasons;
   }
 
   void _toggleMatched(MatchUser user) {
