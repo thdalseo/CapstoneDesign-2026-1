@@ -134,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // 3. 교류 목적 / 언어 교류
     final otherIsKorean =
         other.country.contains('대한민국') || other.countryName == '대한민국';
-    final myIsKorean = !me.isInternational;
+    final myIsKorean = me.countryName == '대한민국';
     if (myIsKorean != otherIsKorean) {
       reasons.add('언어·문화 교류에 최적인 조합이에요');
     } else if (other.countryName.isNotEmpty &&
