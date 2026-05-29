@@ -87,14 +87,16 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> delete(
-    String path,
-    Map<String, dynamic> body,
-  ) async {
-    final uri = Uri.parse('$_baseUrl$path');
+    String path, [
+    Map<String, dynamic>? body,
+    Map<String, String>? params,
+  ]) async {
+    final uri = Uri.parse('$_baseUrl$path')
+        .replace(queryParameters: params);
     final res = await http.delete(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
+      body: body != null ? jsonEncode(body) : null,
     );
 
     final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;

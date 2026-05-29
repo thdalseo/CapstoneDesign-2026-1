@@ -2,13 +2,17 @@ import json
 import os
 from typing import Dict, List
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+import asyncio
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from datetime import datetime
+
 from app.core.database import get_db
-from app.models.user import ChatMessage, ChatRoom, User
+from app.models.user import ChatMessage, ChatRoom, ChatRoomRead, User
 
 router = APIRouter(tags=["chat"])
 
@@ -118,6 +122,25 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
             .order_by(ChatMessage.created_at.desc())
             .first()
         )
+        # 읽음 기준 시각
+        read_record = (
+            db.query(ChatRoomRead)
+            .filter(ChatRoomRead.room_id == room.id, ChatRoomRead.user_id == user_id)
+            .first()
+        )
+        last_read_at = read_record.last_read_at if read_record else datetime.min
+
+        unread_count = (
+            db.query(ChatMessage)
+            .filter(
+                ChatMessage.room_id == room.id,
+                ChatMessage.sender_id != user_id,
+                ChatMessage.created_at > last_read_at,
+                ChatMessage.is_system == False,
+            )
+            .count()
+        )
+
         # "🇺🇸 미국" → "🇺🇸" (국기 이모지만 추출)
         country_parts = (other.country or "").split()
         country_flag = country_parts[0] if country_parts else ""
@@ -131,8 +154,81 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
             "other_user_year": other.year or "",
             "last_message": last_msg.content if last_msg else None,
             "last_message_time": last_msg.created_at.isoformat() if last_msg else None,
+            "unread_count": unread_count,
         })
     return result
+
+
+class ReadRoomRequest(BaseModel):
+    user_id: int
+
+
+@router.post("/chat/rooms/{room_id}/read")
+def mark_room_read(
+    room_id: int,
+    req: ReadRoomRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """채팅방을 읽음 처리하고 WebSocket으로 상대방에게 알린다.
+    동기 핸들러(def)로 선언해 asyncio 이벤트 루프 블로킹을 방지한다.
+    WebSocket 브로드캐스트는 BackgroundTask로 이벤트 루프에 위임한다."""
+    now = datetime.utcnow()
+    record = (
+        db.query(ChatRoomRead)
+        .filter(ChatRoomRead.room_id == room_id, ChatRoomRead.user_id == req.user_id)
+        .first()
+    )
+    if record:
+        record.last_read_at = now
+    else:
+        db.add(ChatRoomRead(room_id=room_id, user_id=req.user_id, last_read_at=now))
+    db.commit()
+
+    # 브로드캐스트를 BackgroundTask로 등록 → 응답 후 이벤트 루프에서 실행
+    payload = {
+        "type": "read",
+        "user_id": req.user_id,
+        "read_at": now.isoformat(),
+    }
+    background_tasks.add_task(_broadcast_background, room_id, payload)
+
+    return {"ok": True}
+
+
+async def _broadcast_background(room_id: int, payload: dict):
+    """BackgroundTask 전용: 이벤트 루프 안에서 안전하게 브로드캐스트."""
+    await manager.broadcast(room_id, payload, exclude=None)
+
+
+@router.get("/chat/rooms/{room_id}/read-status")
+def get_read_status(room_id: int, user_id: int, db: Session = Depends(get_db)):
+    """상대방의 마지막 읽음 시각을 반환한다."""
+    room = db.query(ChatRoom).filter(ChatRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다.")
+    other_id = room.user_id_b if room.user_id_a == user_id else room.user_id_a
+    other_read = (
+        db.query(ChatRoomRead)
+        .filter(ChatRoomRead.room_id == room_id, ChatRoomRead.user_id == other_id)
+        .first()
+    )
+    return {
+        "other_last_read_at": other_read.last_read_at.isoformat() if other_read else None
+    }
+
+
+@router.delete("/chat/rooms/{room_id}")
+def leave_room(room_id: int, user_id: int, db: Session = Depends(get_db)):
+    """채팅방을 나간다. 참여자만 삭제 가능하며 메시지도 함께 삭제된다."""
+    room = db.query(ChatRoom).filter(ChatRoom.id == room_id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="채팅방을 찾을 수 없습니다.")
+    if room.user_id_a != user_id and room.user_id_b != user_id:
+        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+    db.delete(room)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/chat/rooms/{room_id}/messages")

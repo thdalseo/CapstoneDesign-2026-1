@@ -54,6 +54,9 @@ SEED_USERS = [
         "personalities": ["외향적", "친화적"],
         "languages": ["영어", "한국어"],
         "purposes": ["언어교환", "친구사귀기"],
+        # 언어 교환에 최우선 가중치
+        "weight_language": 35, "weight_purpose": 25, "weight_interests": 20,
+        "weight_personality": 10, "weight_major": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "liam@example.com",
@@ -69,6 +72,9 @@ SEED_USERS = [
         "personalities": ["내향적", "계획적인"],
         "languages": ["영어", "한국어"],
         "purposes": ["언어교환", "학업도움"],
+        # 교류 목적·전공 일치를 중시
+        "weight_purpose": 30, "weight_major": 25, "weight_language": 20,
+        "weight_interests": 10, "weight_personality": 8, "weight_year": 5, "weight_nationality": 2,
     },
     {
         "email": "amara@example.com",
@@ -84,6 +90,9 @@ SEED_USERS = [
         "personalities": ["활발한", "유쾌한"],
         "languages": ["영어"],
         "purposes": ["친구사귀기", "문화교류"],
+        # 성향·성격 일치를 가장 중시
+        "weight_personality": 35, "weight_purpose": 25, "weight_interests": 20,
+        "weight_language": 10, "weight_major": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "yuki@example.com",
@@ -99,6 +108,9 @@ SEED_USERS = [
         "personalities": ["차분한", "감성적인"],
         "languages": ["일본어", "한국어", "영어"],
         "purposes": ["언어교환", "문화교류"],
+        # 언어·국적(한국인 파트너 선호)을 중시
+        "weight_language": 30, "weight_nationality": 25, "weight_purpose": 20,
+        "weight_interests": 15, "weight_personality": 5, "weight_major": 3, "weight_year": 2,
     },
     {
         "email": "marco@example.com",
@@ -114,6 +126,9 @@ SEED_USERS = [
         "personalities": ["외향적", "활발한"],
         "languages": ["영어", "한국어"],
         "purposes": ["친구사귀기", "문화교류"],
+        # 공통 관심사 최우선
+        "weight_interests": 35, "weight_personality": 25, "weight_purpose": 20,
+        "weight_language": 10, "weight_nationality": 5, "weight_major": 3, "weight_year": 2,
     },
 
     # Korean sample users.
@@ -131,6 +146,9 @@ SEED_USERS = [
         "personalities": ["내향적", "계획적인", "진지한"],
         "languages": ["한국어", "영어"],
         "purposes": ["언어교환", "학업도움"],
+        # 전공·언어 중시 (같은 컴공 파트너 선호)
+        "weight_major": 30, "weight_language": 25, "weight_purpose": 20,
+        "weight_interests": 15, "weight_personality": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "jaehyun@example.com",
@@ -146,6 +164,9 @@ SEED_USERS = [
         "personalities": ["외향적", "친화적"],
         "languages": ["한국어", "영어"],
         "purposes": ["친구사귀기", "학업도움"],
+        # 성격·관심사 위주 (소셜형)
+        "weight_personality": 30, "weight_interests": 25, "weight_purpose": 20,
+        "weight_language": 15, "weight_major": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "seoah@example.com",
@@ -161,6 +182,9 @@ SEED_USERS = [
         "personalities": ["차분한", "감성적인"],
         "languages": ["한국어", "영어", "일본어"],
         "purposes": ["언어교환", "문화교류"],
+        # 언어 능력 최중시 (어학 전문가형)
+        "weight_language": 35, "weight_purpose": 25, "weight_interests": 20,
+        "weight_nationality": 10, "weight_personality": 5, "weight_major": 3, "weight_year": 2,
     },
     {
         "email": "doyun@example.com",
@@ -176,6 +200,9 @@ SEED_USERS = [
         "personalities": ["호기심 많은", "유쾌한"],
         "languages": ["한국어"],
         "purposes": ["친구사귀기"],
+        # 관심사 절대 최우선 (취미 중심형)
+        "weight_interests": 40, "weight_personality": 25, "weight_purpose": 20,
+        "weight_language": 8, "weight_major": 4, "weight_year": 2, "weight_nationality": 1,
     },
     {
         "email": "yuna@example.com",
@@ -191,6 +218,9 @@ SEED_USERS = [
         "personalities": ["친화적", "계획적인"],
         "languages": ["한국어", "중국어"],
         "purposes": ["문화교류", "친구사귀기"],
+        # 학년 근접 중시 (비슷한 학번 선호)
+        "weight_year": 30, "weight_personality": 25, "weight_interests": 20,
+        "weight_purpose": 15, "weight_language": 5, "weight_major": 3, "weight_nationality": 2,
     },
     {
         "email": "hyunwoo@example.com",
@@ -206,6 +236,9 @@ SEED_USERS = [
         "personalities": ["외향적", "활발한"],
         "languages": ["한국어", "영어"],
         "purposes": ["친구사귀기", "문화교류"],
+        # 국적 다양성 + 관심사·성격 고루 중시
+        "weight_nationality": 20, "weight_interests": 25, "weight_personality": 25,
+        "weight_purpose": 15, "weight_language": 8, "weight_major": 5, "weight_year": 2,
     },
     {
         "email": "sujin@example.com",
@@ -221,6 +254,9 @@ SEED_USERS = [
         "personalities": ["감성적인", "차분한"],
         "languages": ["한국어", "프랑스어"],
         "purposes": ["문화교류", "언어교환"],
+        # 성격 일치 최우선 (감성형)
+        "weight_personality": 35, "weight_interests": 25, "weight_purpose": 20,
+        "weight_language": 10, "weight_nationality": 5, "weight_major": 3, "weight_year": 2,
     },
     {
         "email": "jiho@example.com",
@@ -236,6 +272,9 @@ SEED_USERS = [
         "personalities": ["진지한"],
         "languages": ["한국어", "영어"],
         "purposes": ["학업도움"],
+        # 전공·목적 최우선 (학업 특화형)
+        "weight_major": 35, "weight_purpose": 30, "weight_language": 15,
+        "weight_personality": 10, "weight_interests": 5, "weight_year": 3, "weight_nationality": 2,
     },
 
     # Additional foreign sample users.
@@ -253,6 +292,9 @@ SEED_USERS = [
         "personalities": ["외향적", "호기심 많은"],
         "languages": ["영어", "한국어"],
         "purposes": ["친구사귀기", "문화교류"],
+        # 전 항목 균형 배분 (올라운더형)
+        "weight_purpose": 20, "weight_interests": 20, "weight_personality": 20,
+        "weight_language": 20, "weight_nationality": 10, "weight_major": 5, "weight_year": 5,
     },
     {
         "email": "haruto@example.com",
@@ -268,6 +310,9 @@ SEED_USERS = [
         "personalities": ["내향적", "차분한"],
         "languages": ["일본어", "한국어"],
         "purposes": ["문화교류", "친구사귀기"],
+        # 국적·언어 중시 (한국인 파트너 강선호)
+        "weight_nationality": 30, "weight_language": 25, "weight_interests": 20,
+        "weight_personality": 15, "weight_purpose": 5, "weight_major": 3, "weight_year": 2,
     },
     {
         "email": "liwei@example.com",
@@ -283,6 +328,9 @@ SEED_USERS = [
         "personalities": ["계획적인", "진지한"],
         "languages": ["중국어", "한국어", "영어"],
         "purposes": ["학업도움", "언어교환"],
+        # 목적·전공 중시 (학업 파트너형)
+        "weight_purpose": 30, "weight_major": 25, "weight_language": 20,
+        "weight_interests": 15, "weight_personality": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "chenyu@example.com",
@@ -298,6 +346,9 @@ SEED_USERS = [
         "personalities": ["내향적", "호기심 많은"],
         "languages": ["중국어", "영어"],
         "purposes": ["학업도움", "친구사귀기"],
+        # 전공 최우선 (기술 전문형)
+        "weight_major": 35, "weight_purpose": 25, "weight_interests": 20,
+        "weight_language": 10, "weight_personality": 5, "weight_year": 3, "weight_nationality": 2,
     },
     {
         "email": "linh@example.com",
@@ -313,6 +364,9 @@ SEED_USERS = [
         "personalities": ["친화적", "감성적인"],
         "languages": ["베트남어", "한국어"],
         "purposes": ["언어교환", "문화교류"],
+        # 언어 교환 + 국적 다양성 중시
+        "weight_language": 35, "weight_purpose": 25, "weight_nationality": 15,
+        "weight_interests": 15, "weight_personality": 5, "weight_major": 3, "weight_year": 2,
     },
     {
         "email": "minh@example.com",
@@ -328,6 +382,9 @@ SEED_USERS = [
         "personalities": ["진지한", "계획적인"],
         "languages": ["베트남어", "영어"],
         "purposes": ["학업도움", "친구사귀기"],
+        # 학년 근접 최우선 (같은 학년 파트너 선호)
+        "weight_year": 35, "weight_purpose": 25, "weight_interests": 20,
+        "weight_language": 10, "weight_personality": 5, "weight_major": 3, "weight_nationality": 2,
     },
     {
         "email": "claire@example.com",
@@ -343,6 +400,9 @@ SEED_USERS = [
         "personalities": ["감성적인", "호기심 많은"],
         "languages": ["프랑스어", "영어", "한국어"],
         "purposes": ["문화교류", "언어교환"],
+        # 관심사·언어·국적 다양성 중시 (문화 탐험가형)
+        "weight_interests": 30, "weight_language": 25, "weight_nationality": 20,
+        "weight_personality": 15, "weight_purpose": 5, "weight_major": 3, "weight_year": 2,
     },
 ]
 
@@ -430,6 +490,15 @@ def seed():
             user.description = data["description"]
             user.is_international = data["is_international"]
             user.is_verified = True
+
+            # 매칭 가중치 (합계=100, 없으면 기본값 유지)
+            user.weight_purpose      = data.get("weight_purpose",      25)
+            user.weight_interests    = data.get("weight_interests",     20)
+            user.weight_language     = data.get("weight_language",      18)
+            user.weight_personality  = data.get("weight_personality",   17)
+            user.weight_major        = data.get("weight_major",          8)
+            user.weight_year         = data.get("weight_year",           7)
+            user.weight_nationality  = data.get("weight_nationality",    5)
 
             db.flush()
             _replace_relations(db, user, data)

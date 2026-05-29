@@ -46,7 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int get _totalGroups =>
       _matchList.isEmpty ? 0 : ((_matchList.length - 1) ~/ 5) + 1;
 
-  static const _matchedKey = 'matched_users_json';
+  // 이메일별로 분리해 다른 계정의 매칭 목록이 섞이지 않도록 함
+  String get _matchedKey =>
+      'matched_users_json_${_currentUser?.email ?? 'guest'}';
 
   @override
   void initState() {

@@ -19,6 +19,9 @@ class _ChattingScreenState extends State<ChattingScreen> {
   bool _loading = true;
   bool _hasError = false;
 
+  int get _totalUnread =>
+      _rooms.fold(0, (sum, r) => sum + r.unreadCount);
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +48,7 @@ class _ChattingScreenState extends State<ChattingScreen> {
 
       final rooms = list.cast<Map<String, dynamic>>().map((json) {
         return _RoomInfo(
+          roomId: (json['room_id'] as num?)?.toInt() ?? 0,
           user: MatchUser(
             id: json['other_user_id'] as String? ?? '',
             name: json['other_user_name'] as String? ?? '',
@@ -57,6 +61,7 @@ class _ChattingScreenState extends State<ChattingScreen> {
           ),
           lastMessage: json['last_message'] as String?,
           lastMessageTime: json['last_message_time'] as String?,
+          unreadCount: (json['unread_count'] as num?)?.toInt() ?? 0,
         );
       }).toList();
 
@@ -119,7 +124,7 @@ class _ChattingScreenState extends State<ChattingScreen> {
                   color: AppTheme.textPrimary,
                 ),
               ),
-              if (_rooms.isNotEmpty) ...[
+              if (_totalUnread > 0) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding:
@@ -129,7 +134,7 @@ class _ChattingScreenState extends State<ChattingScreen> {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    '${_rooms.length}',
+                    _totalUnread > 99 ? '99+' : '$_totalUnread',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -189,11 +194,15 @@ class _ChattingScreenState extends State<ChattingScreen> {
               user: room.user,
               lastMessage: room.lastMessage,
               lastMessageTime: _formatTime(room.lastMessageTime),
+              unreadCount: room.unreadCount,
               onTap: () async {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ChattingRoomScreen(user: room.user),
+                    builder: (_) => ChattingRoomScreen(
+                      user: room.user,
+                      roomId: room.roomId,
+                    ),
                   ),
                 );
                 // 채팅방에서 돌아왔을 때 목록 갱신
@@ -280,13 +289,17 @@ class _ChattingScreenState extends State<ChattingScreen> {
 // ── 내부 데이터 클래스 ────────────────────────────────────────────────────────
 
 class _RoomInfo {
+  final int roomId;
   final MatchUser user;
   final String? lastMessage;
   final String? lastMessageTime;
+  final int unreadCount;
 
   const _RoomInfo({
+    required this.roomId,
     required this.user,
     this.lastMessage,
     this.lastMessageTime,
+    this.unreadCount = 0,
   });
 }

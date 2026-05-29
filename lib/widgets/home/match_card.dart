@@ -368,45 +368,51 @@ class _BodyState extends State<_Body> {
     final interestLabel = interestLabelOf(locale);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 관심사 태그 (색상 구분)
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children:
-                widget.user.interests.take(3).toList().asMap().entries.map((e) {
-              final color = _kTagColors[e.key % _kTagColors.length];
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.09),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                      color: color.withValues(alpha: 0.22)),
-                ),
-                child: Text(
-                  interestLabel(e.value),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-
-          // 자기소개
+          // 스크롤 가능한 영역 (태그 + 자기소개 + 번역)
           Expanded(
             child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 관심사 태그 (색상 구분)
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: widget.user.interests
+                        .take(3)
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((e) {
+                      final color = _kTagColors[e.key % _kTagColors.length];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.09),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                              color: color.withValues(alpha: 0.22)),
+                        ),
+                        child: Text(
+                          interestLabel(e.value),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 자기소개
                   Text(
                     widget.user.description,
                     style: const TextStyle(
@@ -448,51 +454,52 @@ class _BodyState extends State<_Body> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 6),
+
+                  // 번역 버튼
+                  GestureDetector(
+                    onTap: _isTranslating ? null : _onTranslateTap,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isTranslating)
+                          const SizedBox(
+                            width: 11,
+                            height: 11,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.5, color: AppTheme.primary),
+                          )
+                        else
+                          Icon(Icons.translate_rounded,
+                              size: 12,
+                              color: _showTranslation
+                                  ? AppTheme.primary
+                                  : AppTheme.textSecondary),
+                        const SizedBox(width: 3),
+                        Text(
+                          _isTranslating
+                              ? 'chat.translating'.tr()
+                              : _showTranslation
+                                  ? 'chat.hide_post_translation'.tr()
+                                  : 'chat.translate_post'.tr(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _showTranslation
+                                ? AppTheme.primary
+                                : AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          // 번역 버튼 (Expanded 밖)
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: _isTranslating ? null : _onTranslateTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isTranslating)
-                  const SizedBox(
-                    width: 11,
-                    height: 11,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 1.5, color: AppTheme.primary),
-                  )
-                else
-                  Icon(Icons.translate_rounded,
-                      size: 12,
-                      color: _showTranslation
-                          ? AppTheme.primary
-                          : AppTheme.textSecondary),
-                const SizedBox(width: 3),
-                Text(
-                  _isTranslating
-                      ? 'chat.translating'.tr()
-                      : _showTranslation
-                          ? 'chat.hide_post_translation'.tr()
-                          : 'chat.translate_post'.tr(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _showTranslation
-                        ? AppTheme.primary
-                        : AppTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 10),
 
-          // 버튼 영역
+          // 버튼 영역 (항상 하단 고정)
           if (widget.onChatTap != null)
             Row(
               children: [

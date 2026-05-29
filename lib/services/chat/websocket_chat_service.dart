@@ -11,26 +11,28 @@ import 'chat_service.dart';
 ///
 /// 서버 주소:
 ///   - 웹 / iOS 시뮬레이터 / 데스크톱: ws://127.0.0.1:8000
-///   - Android 에뮬레이터: ws://10.0.2.2:8000  (에뮬레이터 전용 루프백)
+///   - Android 에뮬레이터: ws://10.0.2.2:8000
 ///   - 실기기 (같은 Wi-Fi): ws://PC_IP:8000
 class WebSocketChatService implements ChatService {
-  static const String _wsBase  = 'ws://127.0.0.1:8000';
+  static const String _wsBase = 'ws://127.0.0.1:8000';
 
-  /// 현재 로그인한 유저의 DB id (String).
-  /// ApiClient / UserService 에서 주입받는다.
-  final String myUserId;
+  final String _userId;
 
-  WebSocketChatService({required this.myUserId});
+  WebSocketChatService({required String myUserId}) : _userId = myUserId;
 
-  // ── 내부 상태 ────────────────────────────────────────────────────────────────
+  // ── 내부 상태 ──────────────────────────────────────────────────────────────
   final _msgCtrl   = StreamController<ChatMessage>.broadcast();
   final _stateCtrl = StreamController<ChatConnectionState>.broadcast();
+  final _readCtrl  = StreamController<DateTime>.broadcast();
 
   WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
   int _localIdSeq = 1;
 
-  // ── 공개 스트림 ───────────────────────────────────────────────────────────────
+  // ── 공개 인터페이스 ────────────────────────────────────────────────────────
+
+  @override
+  String get myUserId => _userId;
 
   @override
   Stream<ChatMessage> get messageStream => _msgCtrl.stream;
@@ -38,7 +40,10 @@ class WebSocketChatService implements ChatService {
   @override
   Stream<ChatConnectionState> get connectionState => _stateCtrl.stream;
 
-  // ── ChatService 구현 ──────────────────────────────────────────────────────────
+  @override
+  Stream<DateTime> get readEventStream => _readCtrl.stream;
+
+  // ── ChatService 구현 ───────────────────────────────────────────────────────
 
   @override
   Future<void> connect(String roomId) async {
@@ -46,7 +51,6 @@ class WebSocketChatService implements ChatService {
     try {
       final uri = Uri.parse('$_wsBase/ws/chat/$roomId');
       _channel = WebSocketChannel.connect(uri);
-
       _wsSub = _channel!.stream.listen(
         _onMessage,
         onError: (_) => _stateCtrl.add(ChatConnectionState.error),
@@ -74,11 +78,9 @@ class WebSocketChatService implements ChatService {
       timestamp: DateTime.now(),
       isMe: true,
     ));
-
-    // 서버로 전송 (서버는 보낸 사람을 제외하고 브로드캐스트)
     _channel?.sink.add(jsonEncode({
       'type': 'message',
-      'sender_id': myUserId,
+      'sender_id': _userId,
       'content': content,
     }));
   }
@@ -93,7 +95,7 @@ class WebSocketChatService implements ChatService {
           id: j['id'].toString(),
           content: j['content'] as String,
           timestamp: DateTime.parse(j['timestamp'] as String),
-          isMe: j['sender_id']?.toString() == myUserId,
+          isMe: j['sender_id']?.toString() == _userId,
         );
       }).toList();
     } catch (_) {
@@ -105,23 +107,31 @@ class WebSocketChatService implements ChatService {
   void dispose() {
     _msgCtrl.close();
     _stateCtrl.close();
+    _readCtrl.close();
   }
 
-  // ── 수신 처리 ─────────────────────────────────────────────────────────────────
+  // ── 수신 처리 ──────────────────────────────────────────────────────────────
 
-  /// 서버에서 브로드캐스트된 메시지 수신.
-  /// 서버는 보낸 사람을 제외하고 전송하므로 여기서 받는 메시지는 상대방 것.
   void _onMessage(dynamic raw) {
     try {
       final data = jsonDecode(raw as String) as Map<String, dynamic>;
-      if (data['type'] != 'message') return;
+      final type = data['type'] as String?;
 
-      _msgCtrl.add(ChatMessage(
-        id: data['id'].toString(),
-        content: data['content'] as String,
-        timestamp: DateTime.parse(data['timestamp'] as String),
-        isMe: false, // 서버가 exclude 처리했으므로 항상 상대방 메시지
-      ));
+      if (type == 'message') {
+        _msgCtrl.add(ChatMessage(
+          id: data['id'].toString(),
+          content: data['content'] as String,
+          timestamp: DateTime.parse(data['timestamp'] as String),
+          isMe: false,
+        ));
+      } else if (type == 'read') {
+        // 내가 보낸 읽음 이벤트는 무시, 상대방 것만 처리
+        final senderStr = data['user_id']?.toString();
+        if (senderStr != _userId) {
+          final readAt = DateTime.tryParse(data['read_at'] as String? ?? '');
+          if (readAt != null) _readCtrl.add(readAt.toLocal());
+        }
+      }
     } catch (_) {
       // 파싱 오류 무시
     }

@@ -6,11 +6,17 @@ enum ChatConnectionState { disconnected, connecting, connected, error }
 /// MockChatService / WebSocketChatService 가 이 계약을 구현한다.
 /// ChattingRoomScreen 은 이 타입만 알고, 실제 구현체를 모른다.
 abstract class ChatService {
+  /// 현재 로그인한 유저 ID
+  String get myUserId;
+
   /// 수신 메시지 스트림 (내가 보낸 메시지 포함 — send() 에서 주입)
   Stream<ChatMessage> get messageStream;
 
   /// 연결 상태 스트림
   Stream<ChatConnectionState> get connectionState;
+
+  /// 상대방 읽음 이벤트 스트림 (상대방이 읽은 시각 DateTime 방출)
+  Stream<DateTime> get readEventStream;
 
   /// [roomId] 채팅방에 연결
   Future<void> connect(String roomId);
