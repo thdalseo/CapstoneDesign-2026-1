@@ -148,7 +148,10 @@
   "match_card": {
     "match": "マッチング",
     "matched": "マッチング済み",
-    "chat": "チャット"
+    "chat": "チャット",
+    "reason_hint": "タップしてマッチング理由を確認",
+    "reason_title": "{name}をおすすめする理由",
+    "reason_empty": "マッチング理由を取得できません"
   },
 
   "mypage": {

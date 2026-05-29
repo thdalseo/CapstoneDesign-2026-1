@@ -144,12 +144,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
       builder: (_) => StatefulBuilder(
         builder: (ctx, setSheetState) {
           final currentCode = context.locale.languageCode;
+          final bottomPadding = MediaQuery.of(ctx).padding.bottom;
           return Container(
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            padding: const EdgeInsets.only(bottom: 32),
+            padding: EdgeInsets.only(bottom: bottomPadding + 8),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

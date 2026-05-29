@@ -84,6 +84,115 @@ class _Header extends StatelessWidget {
 
   const _Header({required this.user});
 
+  void _showReasonSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 드래그 핸들
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // 헤더
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppTheme.mint.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_awesome_rounded,
+                      color: AppTheme.mint, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'match_card.reason_title'
+                          .tr(namedArgs: {'name': user.name}),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${user.matchPercent}% 매칭',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.mint,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // 이유 목록
+            if (user.matchReasons.isEmpty)
+              Text(
+                'match_card.reason_empty'.tr(),
+                style: const TextStyle(
+                    fontSize: 14, color: AppTheme.textSecondary),
+              )
+            else
+              ...user.matchReasons.map(
+                (reason) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          reason,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -99,35 +208,47 @@ class _Header extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 매칭도 뱃지 (오른쪽)
+          // 매칭도 뱃지 + 안내문구 — 탭하면 매칭 이유 바텀시트
           Align(
             alignment: Alignment.centerRight,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.mint.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
+            child: GestureDetector(
+              onTap: () => _showReasonSheet(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.auto_awesome_rounded,
-                      size: 12, color: AppTheme.mint),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${user.matchPercent}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.mint,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.mint.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded,
+                            size: 12, color: AppTheme.mint),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${user.matchPercent}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.mint,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.info_outline_rounded,
+                            size: 11, color: AppTheme.mint),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
 
           // 아바타
           Container(
@@ -247,45 +368,51 @@ class _BodyState extends State<_Body> {
     final interestLabel = interestLabelOf(locale);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 관심사 태그 (색상 구분)
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children:
-                widget.user.interests.take(3).toList().asMap().entries.map((e) {
-              final color = _kTagColors[e.key % _kTagColors.length];
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.09),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                      color: color.withValues(alpha: 0.22)),
-                ),
-                child: Text(
-                  interestLabel(e.value),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: color,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-
-          // 자기소개
+          // 스크롤 가능한 영역 (태그 + 자기소개 + 번역)
           Expanded(
             child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 관심사 태그 (색상 구분)
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: widget.user.interests
+                        .take(3)
+                        .toList()
+                        .asMap()
+                        .entries
+                        .map((e) {
+                      final color = _kTagColors[e.key % _kTagColors.length];
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.09),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                              color: color.withValues(alpha: 0.22)),
+                        ),
+                        child: Text(
+                          interestLabel(e.value),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: color,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 자기소개
                   Text(
                     widget.user.description,
                     style: const TextStyle(
@@ -327,51 +454,52 @@ class _BodyState extends State<_Body> {
                       ),
                     ),
                   ],
+                  const SizedBox(height: 6),
+
+                  // 번역 버튼
+                  GestureDetector(
+                    onTap: _isTranslating ? null : _onTranslateTap,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isTranslating)
+                          const SizedBox(
+                            width: 11,
+                            height: 11,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 1.5, color: AppTheme.primary),
+                          )
+                        else
+                          Icon(Icons.translate_rounded,
+                              size: 12,
+                              color: _showTranslation
+                                  ? AppTheme.primary
+                                  : AppTheme.textSecondary),
+                        const SizedBox(width: 3),
+                        Text(
+                          _isTranslating
+                              ? 'chat.translating'.tr()
+                              : _showTranslation
+                                  ? 'chat.hide_post_translation'.tr()
+                                  : 'chat.translate_post'.tr(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: _showTranslation
+                                ? AppTheme.primary
+                                : AppTheme.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          // 번역 버튼 (Expanded 밖)
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: _isTranslating ? null : _onTranslateTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isTranslating)
-                  const SizedBox(
-                    width: 11,
-                    height: 11,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 1.5, color: AppTheme.primary),
-                  )
-                else
-                  Icon(Icons.translate_rounded,
-                      size: 12,
-                      color: _showTranslation
-                          ? AppTheme.primary
-                          : AppTheme.textSecondary),
-                const SizedBox(width: 3),
-                Text(
-                  _isTranslating
-                      ? 'chat.translating'.tr()
-                      : _showTranslation
-                          ? 'chat.hide_post_translation'.tr()
-                          : 'chat.translate_post'.tr(),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _showTranslation
-                        ? AppTheme.primary
-                        : AppTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
           const SizedBox(height: 10),
 
-          // 버튼 영역
+          // 버튼 영역 (항상 하단 고정)
           if (widget.onChatTap != null)
             Row(
               children: [

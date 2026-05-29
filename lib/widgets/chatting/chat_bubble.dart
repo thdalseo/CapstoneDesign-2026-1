@@ -6,8 +6,9 @@ import '../../theme/app_theme.dart';
 
 class ChatBubble extends StatefulWidget {
   final ChatMessage message;
+  final bool isRead; // 상대방이 읽었는지 여부 (내 메시지에만 적용)
 
-  const ChatBubble({super.key, required this.message});
+  const ChatBubble({super.key, required this.message, this.isRead = false});
 
   @override
   State<ChatBubble> createState() => _ChatBubbleState();
@@ -31,7 +32,22 @@ class _ChatBubbleState extends State<ChatBubble> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: isMe
             ? [
-                _timeText(time),
+                // 시간 + 읽음 표시 (내 메시지 왼쪽)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.isRead) ...[
+                      const Icon(
+                        Icons.done_rounded,
+                        size: 13,
+                        color: AppTheme.textSecondary,
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    _timeText(time),
+                  ],
+                ),
                 const SizedBox(width: 6),
                 _bubble(context, isMe),
               ]

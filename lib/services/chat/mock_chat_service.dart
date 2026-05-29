@@ -11,10 +11,16 @@ class MockChatService implements ChatService {
   int _idSeq = 1000;
 
   @override
+  String get myUserId => '';
+
+  @override
   Stream<ChatMessage> get messageStream => _messageController.stream;
 
   @override
   Stream<ChatConnectionState> get connectionState => _stateController.stream;
+
+  @override
+  Stream<DateTime> get readEventStream => const Stream.empty();
 
   @override
   Future<void> connect(String roomId) async {

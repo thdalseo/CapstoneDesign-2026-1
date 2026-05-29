@@ -15,11 +15,13 @@ import '../../widgets/chatting/chat_input_bar.dart';
 class ChattingRoomScreen extends StatefulWidget {
   final MatchUser user;
   final String? initialMessage;
+  final int? roomId; // 채팅 목록에서 진입 시 미리 알고 있는 room_id
 
   const ChattingRoomScreen({
     super.key,
     required this.user,
     this.initialMessage,
+    this.roomId,
   });
 
   @override
@@ -33,9 +35,12 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   ChatService? _service;        // 비동기 초기화 전까지 null
   final List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSub;
+  StreamSubscription<DateTime>? _readSub;
   ChatConnectionState _connState = ChatConnectionState.disconnected;
   bool _loadingHistory = true;
   bool _showSuggestions = true;
+  int? _resolvedRoomId;         // 서버에서 확정된 room_id
+  DateTime? _otherLastReadAt;   // 상대방이 마지막으로 읽은 시각
 
   // AI 아이스브레이킹 제안
   List<String> _suggestions = const [];
@@ -50,15 +55,14 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchSuggestions());
   }
 
-  /// 1) 서비스 생성  2) 채팅방 ID 확보  3) 히스토리 로드  4) WebSocket 연결
+  /// 초기화 순서:
+  /// 1) 서비스 생성  2) roomId + 프로필 병렬  3) WebSocket 연결
+  /// 4) 읽음상태 조회(fire&forget)  5) 히스토리 로드  6) 읽음처리(fire&forget)
   Future<void> _init() async {
-    // ── 1. 서비스 생성 (myUserId 포함) ──────────────────────────────────────
+    // ── 1. 서비스 생성 ───────────────────────────────────────────────────────
     final svc = await ChatServiceFactory.create();
     if (!mounted) return;
     _service = svc;
-
-    // 내 프로필 로드 (아이스브레이킹용)
-    _myUser = await UserService.loadUser(syncFromServer: false);
 
     _service!.connectionState.listen((state) {
       if (mounted) setState(() => _connState = state);
@@ -69,33 +73,56 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         _scrollToBottom();
       }
     });
+    _readSub = _service!.readEventStream.listen((readAt) {
+      if (mounted) setState(() => _otherLastReadAt = readAt);
+    });
 
-    // ── 2. 채팅방 ID 확보 ────────────────────────────────────────────────────
-    final roomId = await _resolveRoomId();
+    // ── 2. roomId 확보 + 내 프로필 로드 (병렬) ──────────────────────────────
+    final results = await Future.wait([
+      _resolveRoomId(),
+      UserService.loadUser(syncFromServer: false),
+    ]);
     if (!mounted) return;
 
-    // ── 3. 메시지 히스토리 로드 ──────────────────────────────────────────────
-    final history = await _service!.fetchHistory(roomId);
-    if (mounted) {
-      setState(() {
-        _messages.addAll(history);
-        _loadingHistory = false;
-      });
-    }
+    final roomId = results[0] as String;
+    _myUser = results[1] as UserModel?;
+    setState(() => _resolvedRoomId = int.tryParse(roomId));
 
-    // ── 4. WebSocket 연결 ────────────────────────────────────────────────────
+    final myId = int.tryParse(_service!.myUserId) ?? 0;
+
+    // ── 3. WebSocket 연결 먼저 (이후 서버 브로드캐스트를 받을 준비) ──────────
     await _service!.connect(roomId);
 
-    // ── 5. 초기 메시지 전송 (도움 화면에서 진입 시) ─────────────────────────
+    // ── 4. 상대방 읽음 상태 조회 (히스토리와 동시, DB 읽기만) ────────────────
+    if (myId > 0) _fetchOtherReadStatus(roomId, myId);
+
+    // ── 5. 메시지 히스토리 로드 ──────────────────────────────────────────────
+    final history = await _service!.fetchHistory(roomId);
+    if (!mounted) return;
+
+    setState(() {
+      _messages.addAll(history);
+      _loadingHistory = false;
+    });
+    _scrollToBottom(); // 최신 메시지로 이동
+
+    // ── 6. 읽음 처리 (메시지 화면에 표시된 후 — DB 쓰기 경합 방지) ───────────
+    if (myId > 0) _markAsRead(roomId, myId);
+
+    // ── 7. 초기 메시지 전송 (도움 화면에서 진입 시) ─────────────────────────
     if (widget.initialMessage != null && mounted) {
       _service!.send(widget.initialMessage!);
       _scrollToBottom();
     }
   }
 
-  /// 두 유저의 채팅방 ID를 REST API로 확보.
-  /// 서버 연결 불가 또는 ID 미확정 시 상대방 user.id(또는 name)를 fallback으로 사용.
+  /// 두 유저의 채팅방 ID를 확보.
+  /// 채팅 목록에서 진입 시 widget.roomId를 바로 사용해 서버 왕복을 줄인다.
   Future<String> _resolveRoomId() async {
+    // 이미 알고 있는 roomId가 있으면 즉시 반환 (불필요한 서버 호출 생략)
+    if (widget.roomId != null && widget.roomId! > 0) {
+      return widget.roomId!.toString();
+    }
     try {
       final me = await UserService.loadUser(syncFromServer: false);
       final myId = int.tryParse(me?.id ?? '') ?? 0;
@@ -118,6 +145,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   @override
   void dispose() {
     _messageSub?.cancel();
+    _readSub?.cancel();
     _service?.disconnect();
     _service?.dispose();
     _controller.dispose();
@@ -383,6 +411,71 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     return List.generate(6, (i) => 'chat.suggestions[$i]'.tr());
   }
 
+  /// 상대방의 마지막 읽음 시각을 서버에서 초기 로드
+  Future<void> _fetchOtherReadStatus(String roomId, int myId) async {
+    try {
+      final res = await ApiClient.get(
+        '/chat/rooms/$roomId/read-status',
+        params: {'user_id': '$myId'},
+      );
+      final raw = res['other_last_read_at'] as String?;
+      if (raw != null && mounted) {
+        setState(() => _otherLastReadAt = DateTime.tryParse(raw)?.toLocal());
+      }
+    } catch (_) {}
+  }
+
+  /// 채팅방 읽음 처리
+  Future<void> _markAsRead(String roomId, int myId) async {
+    try {
+      await ApiClient.post(
+        '/chat/rooms/$roomId/read',
+        {'user_id': myId},
+      );
+    } catch (_) {}
+  }
+
+  /// 채팅방 나가기 확인 다이얼로그
+  Future<void> _confirmLeave() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('채팅방 나가기'),
+        content: const Text('채팅방을 나가면\n대화 내용이 모두 삭제됩니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              '나가기',
+              style: TextStyle(color: Colors.red.shade400),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) _leaveRoom();
+  }
+
+  /// 채팅방 삭제 후 이전 화면으로
+  Future<void> _leaveRoom() async {
+    try {
+      final roomId = _resolvedRoomId ?? widget.roomId;
+      final myId = int.tryParse(_service?.myUserId ?? '') ?? 0;
+      if (roomId != null && myId > 0) {
+        await ApiClient.delete(
+          '/chat/rooms/$roomId',
+          null,
+          {'user_id': '$myId'},
+        );
+      }
+    } catch (_) {}
+    if (mounted) Navigator.pop(context);
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -450,6 +543,29 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded,
+                color: AppTheme.textPrimary, size: 22),
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'leave',
+                child: Row(
+                  children: [
+                    Icon(Icons.exit_to_app_rounded,
+                        size: 18, color: Colors.red.shade400),
+                    const SizedBox(width: 10),
+                    Text('채팅방 나가기',
+                        style: TextStyle(color: Colors.red.shade400)),
+                  ],
+                ),
+              ),
+            ],
+            onSelected: (value) {
+              if (value == 'leave') _confirmLeave();
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppTheme.border),
@@ -472,8 +588,13 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         itemCount: _messages.length,
-                        itemBuilder: (context, i) =>
-                            ChatBubble(message: _messages[i]),
+                        itemBuilder: (context, i) {
+                          final msg = _messages[i];
+                          final isRead = msg.isMe &&
+                              _otherLastReadAt != null &&
+                              !msg.timestamp.isAfter(_otherLastReadAt!);
+                          return ChatBubble(message: msg, isRead: isRead);
+                        },
                       ),
           ),
           if (!_loadingHistory && _showSuggestions) _buildSuggestionChips(),

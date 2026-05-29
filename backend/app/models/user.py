@@ -183,6 +183,24 @@ class ChatMessage(Base):
     sender = relationship("User", foreign_keys=[sender_id])
 
 
+class ChatRoomRead(Base):
+    """채팅방 읽음 추적 — 유저별 마지막 읽은 시각 저장."""
+    __tablename__ = "chat_room_reads"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    room_id = Column(
+        Integer, ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    last_read_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("room_id", "user_id", name="uq_chat_room_read"),
+    )
+
+
 class HelpPost(Base):
     __tablename__ = "help_posts"
 

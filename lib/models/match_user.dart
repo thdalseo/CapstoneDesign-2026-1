@@ -7,6 +7,7 @@ class MatchUser {
   final List<String> interests;
   final String description;
   final int matchPercent;
+  final List<String> matchReasons;
 
   const MatchUser({
     this.id = '',
@@ -17,7 +18,20 @@ class MatchUser {
     required this.interests,
     required this.description,
     required this.matchPercent,
+    this.matchReasons = const [],
   });
+
+  MatchUser copyWith({List<String>? matchReasons}) => MatchUser(
+        id: id,
+        name: name,
+        country: country,
+        major: major,
+        year: year,
+        interests: interests,
+        description: description,
+        matchPercent: matchPercent,
+        matchReasons: matchReasons ?? this.matchReasons,
+      );
 
   // "🇺🇸 미국" → "미국", "🇺🇸" → "" (이모지만 있으면 빈 문자열)
   String get countryName {
@@ -34,6 +48,7 @@ class MatchUser {
         'interests': interests,
         'description': description,
         'matchPercent': matchPercent,
+        'matchReasons': matchReasons,
       };
 
   factory MatchUser.fromJson(Map<String, dynamic> json) => MatchUser(
@@ -48,5 +63,9 @@ class MatchUser {
             [],
         description: json['description'] as String? ?? '',
         matchPercent: json['matchPercent'] as int? ?? 0,
+        matchReasons: (json['matchReasons'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
       );
 }
