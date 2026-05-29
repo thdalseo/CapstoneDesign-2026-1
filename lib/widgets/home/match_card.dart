@@ -244,14 +244,6 @@ class _Header extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'match_card.reason_hint'.tr(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.7),
-                    ),
-                  ),
                 ],
               ),
             ),
