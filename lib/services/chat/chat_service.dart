@@ -18,6 +18,9 @@ abstract class ChatService {
   /// 상대방 읽음 이벤트 스트림 (상대방이 읽은 시각 DateTime 방출)
   Stream<DateTime> get readEventStream;
 
+  /// 서버 에러 스트림 (금칙어 등 — 에러 메시지 문자열 방출)
+  Stream<String> get errorStream;
+
   /// [roomId] 채팅방에 연결
   Future<void> connect(String roomId);
 

@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "Home",
+    "connect": "Match",
     "matching": "Match",
     "chat": "Chat",
     "help": "Help",
@@ -81,6 +82,7 @@
     "cat_medical": "Medical",
     "cat_campus": "Campus",
     "cat_admin": "Admin",
+    "cat_other": "Other",
     "badge_urgent": "Urgent",
     "badge_complete": "Done",
     "helper_count": "{count} helpers",

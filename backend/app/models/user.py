@@ -217,6 +217,7 @@ class HelpPost(Base):
             "의료",
             "캠퍼스",
             "행정",
+            "기타",
             name="category_enum",
             native_enum=False,
         ),
@@ -251,6 +252,22 @@ class HelpHelper(Base):
 
     post = relationship("HelpPost", back_populates="helpers")
     helper = relationship("User", foreign_keys=[helper_id])
+
+
+class LanguageExchangePost(Base):
+    __tablename__ = "language_exchange_posts"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    author_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    native_language = Column(String(50), nullable=False)   # 가르칠 수 있는 언어
+    target_language = Column(String(50), nullable=False)   # 배우고 싶은 언어
+    memo = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    author = relationship("User", foreign_keys=[author_id])
 
 
 class EmailVerification(Base):

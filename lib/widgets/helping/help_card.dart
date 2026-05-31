@@ -38,6 +38,7 @@ class _HelpCardState extends State<HelpCard> {
     '한국어': Color(0xFFEF4444),
     '캠퍼스': Color(0xFFF59E0B),
     '의료': Color(0xFFEC4899),
+    '기타': Color(0xFF6B7280),
   };
 
   // DB 값(한국어) → 번역 키
@@ -48,6 +49,7 @@ class _HelpCardState extends State<HelpCard> {
     '의료': 'help.cat_medical',
     '캠퍼스': 'help.cat_campus',
     '행정': 'help.cat_admin',
+    '기타': 'help.cat_other',
   };
 
   @override
@@ -134,45 +136,8 @@ class _HelpCardState extends State<HelpCard> {
                     color: AppTheme.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                // 번역 버튼
-                GestureDetector(
-                  onTap: _isTranslating ? null : _onTranslateTap,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isTranslating)
-                        const SizedBox(
-                          width: 10,
-                          height: 10,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 1.5, color: AppTheme.primary),
-                        )
-                      else
-                        Icon(Icons.translate_rounded,
-                            size: 11,
-                            color: _showTranslation
-                                ? AppTheme.primary
-                                : AppTheme.textSecondary),
-                      const SizedBox(width: 3),
-                      Text(
-                        _isTranslating
-                            ? 'chat.translating'.tr()
-                            : _showTranslation
-                                ? 'chat.hide_post_translation'.tr()
-                                : 'chat.translate_post'.tr(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: _showTranslation
-                              ? AppTheme.primary
-                              : AppTheme.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // 번역 결과
+
+                // 번역 결과 (제목 + 메모)
                 if (_showTranslation && _translatedTitle != null) ...[
                   const SizedBox(height: 6),
                   Container(
@@ -189,6 +154,7 @@ class _HelpCardState extends State<HelpCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(Icons.translate_rounded,
                                 size: 11, color: AppTheme.primary),
@@ -223,7 +189,7 @@ class _HelpCardState extends State<HelpCard> {
                 ],
                 const SizedBox(height: 8),
 
-                // 작성자 + 도움주기 버튼
+                // 작성자 행
                 Row(
                   children: [
                     CircleAvatar(
@@ -260,6 +226,44 @@ class _HelpCardState extends State<HelpCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    // 번역 버튼
+                    GestureDetector(
+                      onTap: _isTranslating ? null : _onTranslateTap,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_isTranslating)
+                            const SizedBox(
+                              width: 10,
+                              height: 10,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 1.5, color: AppTheme.primary),
+                            )
+                          else
+                            Icon(Icons.translate_rounded,
+                                size: 11,
+                                color: _showTranslation
+                                    ? AppTheme.primary
+                                    : AppTheme.textSecondary),
+                          const SizedBox(width: 3),
+                          Text(
+                            _isTranslating
+                                ? 'chat.translating'.tr()
+                                : _showTranslation
+                                    ? 'chat.hide_post_translation'.tr()
+                                    : 'chat.translate_post'.tr(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _showTranslation
+                                  ? AppTheme.primary
+                                  : AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       widget.post['timeAgo'] as String? ?? '',
                       style: const TextStyle(
@@ -275,67 +279,61 @@ class _HelpCardState extends State<HelpCard> {
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeInOut,
                   child: _expanded
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 12),
-                            // 장소·날짜·시간 + 도움주기 버튼
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      _infoRow(Icons.place_outlined,
-                                          widget.post['place'] as String? ?? ''),
-                                      const SizedBox(height: 4),
-                                      _infoRow(Icons.calendar_today_outlined,
-                                          widget.post['date'] as String? ?? ''),
-                                      const SizedBox(height: 4),
-                                      _infoRow(Icons.access_time_outlined,
-                                          widget.post['time'] as String? ?? ''),
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // 좌측: 장소·날짜·시간·내용 (전체)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _infoRow(Icons.place_outlined,
+                                        widget.post['place'] as String? ?? ''),
+                                    const SizedBox(height: 4),
+                                    _infoRow(Icons.calendar_today_outlined,
+                                        widget.post['date'] as String? ?? ''),
+                                    const SizedBox(height: 4),
+                                    _infoRow(Icons.access_time_outlined,
+                                        widget.post['time'] as String? ?? ''),
+                                    if (memo.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        memo,
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: AppTheme.textSecondary,
+                                          height: 1.5,
+                                        ),
+                                      ),
                                     ],
-                                  ),
-                                ),
-                                if (!isMyPost && !isCompleted) ...[
-                                  const SizedBox(width: 12),
-                                  _actionBtn('help.btn_help'.tr(),
-                                      AppTheme.mint, widget.onHelp),
-                                ],
-                              ],
-                            ),
-                            if (memo.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              Text(
-                                memo,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: AppTheme.textSecondary,
-                                  height: 1.5,
+                                  ],
                                 ),
                               ),
+                              const SizedBox(width: 12),
+                              // 우측 하단: 버튼들 (좌측 전체 높이 기준 하단 정렬)
+                              if (!isMyPost && !isCompleted)
+                                _actionBtn('help.btn_help'.tr(),
+                                    AppTheme.mint, widget.onHelp)
+                              else if (isMyPost && !isCompleted)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _actionBtn('help.btn_complete'.tr(),
+                                        AppTheme.mint, widget.onComplete),
+                                    const SizedBox(width: 6),
+                                    _actionBtn('help.btn_edit'.tr(),
+                                        AppTheme.primary, widget.onEdit),
+                                    const SizedBox(width: 6),
+                                    _actionBtn('help.btn_delete'.tr(),
+                                        AppTheme.coral, widget.onDelete),
+                                  ],
+                                ),
                             ],
-                            if (isMyPost && !isCompleted) ...[
-                              const SizedBox(height: 12),
-                              Wrap(
-                                alignment: WrapAlignment.end,
-                                spacing: 8,
-                                runSpacing: 6,
-                                children: [
-                                  _actionBtn('help.btn_complete'.tr(),
-                                      AppTheme.mint, widget.onComplete),
-                                  _actionBtn('help.btn_edit'.tr(),
-                                      AppTheme.primary, widget.onEdit),
-                                  _actionBtn('help.btn_delete'.tr(),
-                                      AppTheme.coral, widget.onDelete),
-                                ],
-                              ),
-                            ],
-                          ],
+                          ),
                         )
                       : const SizedBox.shrink(),
                 ),

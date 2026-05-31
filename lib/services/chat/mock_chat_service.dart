@@ -23,6 +23,9 @@ class MockChatService implements ChatService {
   Stream<DateTime> get readEventStream => const Stream.empty();
 
   @override
+  Stream<String> get errorStream => const Stream.empty();
+
+  @override
   Future<void> connect(String roomId) async {
     _stateController.add(ChatConnectionState.connecting);
     await Future.delayed(const Duration(milliseconds: 400));

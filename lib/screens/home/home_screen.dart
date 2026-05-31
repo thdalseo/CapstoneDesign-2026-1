@@ -8,12 +8,12 @@ import '../../models/user_model.dart';
 import '../../services/match_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
-import '../../screens/matching/matching_screen.dart';
-import '../../screens/chatting/chatting_screen.dart';
 import '../../screens/mypage/mypage_screen.dart';
 import '../../screens/mypage/edit_profile_screen.dart';
 import '../../screens/helping/helping_screen.dart';
 import '../../screens/chatting/chatting_room_screen.dart';
+import '../../screens/chatting/chatting_screen.dart';
+import '../../screens/matching/matching_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
 import '../../widgets/home/my_profile_card.dart';
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return reasons;
   }
 
-  void _toggleMatched(MatchUser user) {
+  Future<void> _toggleMatched(MatchUser user) async {
     setState(() {
       final idx = _matchedUsers.indexWhere((u) => u.id == user.id);
       if (idx == -1) {
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _matchedUsers.removeAt(idx);
       }
     });
-    _saveMatchedUsers();
+    await _saveMatchedUsers();
   }
 
   /// 채팅 시작 — 채팅방으로 이동 (채팅 목록은 서버에서 자동 관리)

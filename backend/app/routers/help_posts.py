@@ -1,4 +1,4 @@
-from datetime import date, time
+import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.profanity_filter import contains_profanity
 from app.models.user import HelpHelper, HelpPost, User
 
 router = APIRouter(prefix="/api/help-posts", tags=["help-posts"])
@@ -16,8 +17,8 @@ class HelpPostCreateRequest(BaseModel):
     category: str
     title: str
     place: str
-    date: date
-    time: time
+    date: datetime.date
+    time: datetime.time
     memo: Optional[str] = None
     is_urgent: bool = False
 
@@ -26,8 +27,8 @@ class HelpPostUpdateRequest(BaseModel):
     category: Optional[str] = None
     title: Optional[str] = None
     place: Optional[str] = None
-    date: Optional[date] = None
-    time: Optional[time] = None
+    date: Optional[datetime.date] = None
+    time: Optional[datetime.time] = None
     memo: Optional[str] = None
     is_urgent: Optional[bool] = None
     is_completed: Optional[bool] = None
@@ -58,6 +59,7 @@ def _post_dict(post: HelpPost) -> dict:
         "title": post.title,
         "author_id": post.author_id,
         "authorName": post.author.name if post.author else "",
+        "country": post.author.country if post.author else "",
         "major": post.author.major if post.author else "",
         "place": post.place,
         "date": post.date.isoformat(),
@@ -109,6 +111,11 @@ def list_my_help_posts(email: str = Query(...), db: Session = Depends(get_db)):
 
 @router.post("")
 def create_help_post(req: HelpPostCreateRequest, db: Session = Depends(get_db)):
+    # 금칙어 검사
+    check_fields = [req.title, req.memo or ""]
+    if any(contains_profanity(f) for f in check_fields):
+        raise HTTPException(status_code=400, detail="부적절한 표현이 포함되어 있어요.")
+
     author = _get_user_by_email(db, req.author_email)
     post = HelpPost(
         author_id=author.id,
@@ -130,6 +137,11 @@ def create_help_post(req: HelpPostCreateRequest, db: Session = Depends(get_db)):
 def update_help_post(
     post_id: int, req: HelpPostUpdateRequest, db: Session = Depends(get_db)
 ):
+    # 금칙어 검사
+    check_fields = [req.title or "", req.memo or ""]
+    if any(contains_profanity(f) for f in check_fields):
+        raise HTTPException(status_code=400, detail="부적절한 표현이 포함되어 있어요.")
+
     post = _get_post(db, post_id)
     updates = req.model_dump(exclude_unset=True)
     field_map = {

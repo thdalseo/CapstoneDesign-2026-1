@@ -5,6 +5,7 @@ class MatchUser {
   final String major;
   final String year;
   final List<String> interests;
+  final List<String> languages;
   final String description;
   final int matchPercent;
   final List<String> matchReasons;
@@ -16,6 +17,7 @@ class MatchUser {
     required this.major,
     required this.year,
     required this.interests,
+    this.languages = const [],
     required this.description,
     required this.matchPercent,
     this.matchReasons = const [],
@@ -28,10 +30,14 @@ class MatchUser {
         major: major,
         year: year,
         interests: interests,
+        languages: languages,
         description: description,
         matchPercent: matchPercent,
         matchReasons: matchReasons ?? this.matchReasons,
       );
+
+  // "🇺🇸 미국" → "🇺🇸"
+  String get countryFlag => country.split(' ').first;
 
   // "🇺🇸 미국" → "미국", "🇺🇸" → "" (이모지만 있으면 빈 문자열)
   String get countryName {
@@ -46,6 +52,7 @@ class MatchUser {
         'major': major,
         'year': year,
         'interests': interests,
+        'languages': languages,
         'description': description,
         'matchPercent': matchPercent,
         'matchReasons': matchReasons,
@@ -58,6 +65,10 @@ class MatchUser {
         major: json['major'] as String? ?? '',
         year: json['year'] as String? ?? '',
         interests: (json['interests'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        languages: (json['languages'] as List<dynamic>?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [],

@@ -24,7 +24,7 @@ class _HelpingScreenState extends State<HelpingScreen>
 
   // DB 저장값(한국어) 그대로 유지 - 필터링에 사용
   static const List<String> _categoryValues = [
-    '전체', '생활', '수업', '언어', '의료', '캠퍼스', '행정',
+    '전체', '생활', '수업', '언어', '의료', '캠퍼스', '행정', '기타',
   ];
 
   // 카테고리 표시 번역 키 매핑
@@ -36,6 +36,7 @@ class _HelpingScreenState extends State<HelpingScreen>
     '의료': 'help.cat_medical',
     '캠퍼스': 'help.cat_campus',
     '행정': 'help.cat_admin',
+    '기타': 'help.cat_other',
   };
 
   String _selectedCategory = '전체';
@@ -150,12 +151,21 @@ class _HelpingScreenState extends State<HelpingScreen>
       posts = posts.where((p) => p['category'] == _selectedCategory).toList();
     }
     if (_sortByUrgent) {
+      // 긴급순: 긴급 여부 → 날짜 최신순
       posts.sort((a, b) {
         final aU = a['isUrgent'] as bool? ?? false;
         final bU = b['isUrgent'] as bool? ?? false;
-        if (aU && !bU) return -1;
-        if (!aU && bU) return 1;
-        return 0;
+        if (aU != bU) return aU ? -1 : 1;
+        final aDate = a['createdAt'] as String? ?? '';
+        final bDate = b['createdAt'] as String? ?? '';
+        return bDate.compareTo(aDate);
+      });
+    } else {
+      // 최신순: 날짜 내림차순
+      posts.sort((a, b) {
+        final aDate = a['createdAt'] as String? ?? '';
+        final bDate = b['createdAt'] as String? ?? '';
+        return bDate.compareTo(aDate);
       });
     }
     return posts;
@@ -260,7 +270,7 @@ class _HelpingScreenState extends State<HelpingScreen>
               final user = MatchUser(
                 id: post['author_id']?.toString() ?? '',
                 name: post['authorName'] as String? ?? '',
-                country: '🤝',
+                country: post['country'] as String? ?? '',
                 major: post['major'] as String? ?? '',
                 year: '',
                 interests: [post['category'] as String? ?? ''],
@@ -343,7 +353,7 @@ class _HelpingScreenState extends State<HelpingScreen>
             padding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: _categoryValues.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (_, i) {
               final cat = _categoryValues[i];
               final selected = _selectedCategory == cat;

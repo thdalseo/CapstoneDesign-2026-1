@@ -1,6 +1,7 @@
 {
   "nav": {
-    "home": "首页",
+    "home": "主页",
+    "connect": "匹配",
     "matching": "匹配",
     "chat": "聊天",
     "help": "帮助",
@@ -81,6 +82,7 @@
     "cat_medical": "医疗",
     "cat_campus": "校园",
     "cat_admin": "行政",
+    "cat_other": "其他",
     "badge_urgent": "紧急",
     "badge_complete": "完成",
     "helper_count": "{count}人帮助",

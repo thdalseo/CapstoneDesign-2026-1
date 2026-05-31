@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.core.database import get_db
+from app.core.profanity_filter import contains_profanity
 from app.models.user import ChatMessage, ChatRoom, ChatRoomRead, User
 
 router = APIRouter(tags=["chat"])
@@ -141,17 +142,16 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
             .count()
         )
 
-        # "🇺🇸 미국" → "🇺🇸" (국기 이모지만 추출)
-        country_parts = (other.country or "").split()
-        country_flag = country_parts[0] if country_parts else ""
-
         result.append({
             "room_id": room.id,
             "other_user_id": str(other.id),
             "other_user_name": other.name,
-            "other_user_country": country_flag,
+            "other_user_country": other.country or "",
             "other_user_major": other.major or "",
             "other_user_year": other.year or "",
+            "other_user_interests": [i.interest for i in other.interests],
+            "other_user_languages": [l.language for l in other.languages],
+            "other_user_description": other.description or "",
             "last_message": last_msg.content if last_msg else None,
             "last_message_time": last_msg.created_at.isoformat() if last_msg else None,
             "unread_count": unread_count,
@@ -565,6 +565,15 @@ async def websocket_chat(
             content = (data.get("content") or "").strip()
             sender_id = data.get("sender_id")
             if not content:
+                continue
+
+            # 금칙어 검사 — 발신자에게만 에러 응답, 연결은 유지
+            if contains_profanity(content):
+                await ws.send_json({
+                    "type": "error",
+                    "code": "profanity",
+                    "message": "부적절한 표현이 포함되어 있어요.",
+                })
                 continue
 
             # DB 저장
