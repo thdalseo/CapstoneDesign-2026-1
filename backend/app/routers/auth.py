@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.profanity_filter import contains_profanity
 from app.email_verifier import send_verification_email
 from app.models.user import (
     EmailVerification,
@@ -201,6 +202,10 @@ def update_profile(req: UpdateProfileRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == req.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    # 금칙어 검사 (자기소개)
+    if req.description and contains_profanity(req.description):
+        raise HTTPException(status_code=400, detail="부적절한 표현이 포함되어 있어요.")
 
     # 단순 필드
     if req.year is not None:

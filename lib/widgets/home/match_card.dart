@@ -366,6 +366,7 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     final locale = context.locale.languageCode;
     final interestLabel = interestLabelOf(locale);
+    final languageLabel = languageLabelOf(locale);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
@@ -410,6 +411,42 @@ class _BodyState extends State<_Body> {
                       );
                     }).toList(),
                   ),
+                  // 사용 가능 언어 태그
+                  if (widget.user.languages.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: widget.user.languages.take(3).map((lang) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                                color: AppTheme.primary.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.translate_rounded,
+                                  size: 10, color: AppTheme.primary),
+                              const SizedBox(width: 3),
+                              Text(
+                                languageLabel(lang),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 12),
 
                   // 자기소개

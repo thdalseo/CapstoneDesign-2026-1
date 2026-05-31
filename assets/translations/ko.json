@@ -1,6 +1,7 @@
 {
   "nav": {
     "home": "홈",
+    "connect": "매칭",
     "matching": "매칭",
     "chat": "채팅",
     "help": "도움",
@@ -81,6 +82,7 @@
     "cat_medical": "의료",
     "cat_campus": "캠퍼스",
     "cat_admin": "행정",
+    "cat_other": "기타",
     "badge_urgent": "긴급",
     "badge_complete": "완료",
     "helper_count": "도움 {count}명",

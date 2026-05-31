@@ -61,11 +61,13 @@ class ChatRoomTile extends StatelessWidget {
                           color: AppTheme.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        user.country,
-                        style: const TextStyle(fontSize: 13),
-                      ),
+                      if (user.countryFlag.isNotEmpty) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          user.countryFlag,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 4),

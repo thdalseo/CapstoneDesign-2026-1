@@ -24,6 +24,7 @@ class WebSocketChatService implements ChatService {
   final _msgCtrl   = StreamController<ChatMessage>.broadcast();
   final _stateCtrl = StreamController<ChatConnectionState>.broadcast();
   final _readCtrl  = StreamController<DateTime>.broadcast();
+  final _errorCtrl = StreamController<String>.broadcast();
 
   WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
@@ -42,6 +43,9 @@ class WebSocketChatService implements ChatService {
 
   @override
   Stream<DateTime> get readEventStream => _readCtrl.stream;
+
+  @override
+  Stream<String> get errorStream => _errorCtrl.stream;
 
   // ── ChatService 구현 ───────────────────────────────────────────────────────
 
@@ -108,6 +112,7 @@ class WebSocketChatService implements ChatService {
     _msgCtrl.close();
     _stateCtrl.close();
     _readCtrl.close();
+    _errorCtrl.close();
   }
 
   // ── 수신 처리 ──────────────────────────────────────────────────────────────
@@ -131,6 +136,9 @@ class WebSocketChatService implements ChatService {
           final readAt = DateTime.tryParse(data['read_at'] as String? ?? '');
           if (readAt != null) _readCtrl.add(readAt.toLocal());
         }
+      } else if (type == 'error') {
+        final msg = data['message'] as String? ?? '오류가 발생했어요.';
+        _errorCtrl.add(msg);
       }
     } catch (_) {
       // 파싱 오류 무시

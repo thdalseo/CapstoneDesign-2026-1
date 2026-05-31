@@ -36,6 +36,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   final List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSub;
   StreamSubscription<DateTime>? _readSub;
+  StreamSubscription<String>? _errorSub;
   ChatConnectionState _connState = ChatConnectionState.disconnected;
   bool _loadingHistory = true;
   bool _showSuggestions = true;
@@ -75,6 +76,22 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     });
     _readSub = _service!.readEventStream.listen((readAt) {
       if (mounted) setState(() => _otherLastReadAt = readAt);
+    });
+    _errorSub = _service!.errorStream.listen((msg) {
+      if (!mounted) return;
+      // 낙관적으로 추가된 마지막 내 메시지 제거 (금칙어 롤백)
+      setState(() {
+        final idx = _messages.lastIndexWhere((m) => m.isMe);
+        if (idx != -1) _messages.removeAt(idx);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     });
 
     // ── 2. roomId 확보 + 내 프로필 로드 (병렬) ──────────────────────────────
@@ -146,6 +163,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   void dispose() {
     _messageSub?.cancel();
     _readSub?.cancel();
+    _errorSub?.cancel();
     _service?.disconnect();
     _service?.dispose();
     _controller.dispose();
@@ -158,7 +176,6 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    if (_showSuggestions) setState(() => _showSuggestions = false);
     _service!.send(text);
     _scrollToBottom();
   }
@@ -476,6 +493,166 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     if (mounted) Navigator.pop(context);
   }
 
+  void _showProfileSheet(BuildContext context) {
+    final user = widget.user;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 드래그 핸들
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // 아바타
+            Container(
+              width: 68,
+              height: 68,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFFE8F0FE),
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: AppTheme.primary,
+                size: 36,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // 이름 + 국기
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  user.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                if (user.countryFlag.isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  Text(user.countryFlag,
+                      style: const TextStyle(fontSize: 18)),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            // 국가명
+            if (user.countryName.isNotEmpty)
+              Text(
+                user.countryName,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            const SizedBox(height: 4),
+            // 전공 · 학년
+            if (user.major.isNotEmpty)
+              Text(
+                [user.major, if (user.year.isNotEmpty) user.year].join(' · '),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            const SizedBox(height: 16),
+            // 관심사 태그
+            if (user.interests.isNotEmpty)
+              Wrap(
+                spacing: 7,
+                runSpacing: 7,
+                alignment: WrapAlignment.center,
+                children: user.interests.map((tag) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F4F8),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      tag,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            // 언어 태그
+            if (user.languages.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: user.languages.map((lang) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.translate_rounded,
+                            size: 11, color: AppTheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          lang,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+            if (user.description.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                user.description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  height: 1.6,
+                ),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -502,46 +679,51 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFE8F0FE),
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppTheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      widget.user.name,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      widget.user.country,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
+        title: GestureDetector(
+          onTap: () => _showProfileSheet(context),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFE8F0FE),
                 ),
-                _ConnectionLabel(state: _connState),
-              ],
-            ),
-          ],
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: AppTheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        widget.user.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      if (widget.user.countryFlag.isNotEmpty) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          widget.user.countryFlag,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ],
+                  ),
+                  _ConnectionLabel(state: _connState),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           PopupMenuButton<String>(

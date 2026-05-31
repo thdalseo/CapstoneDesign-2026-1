@@ -36,8 +36,8 @@ class HomeBottomNav extends StatelessWidget {
           label: 'nav.matching'.tr(),
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.chat_bubble_outline),
-          activeIcon: const Icon(Icons.chat_bubble),
+          icon: const Icon(Icons.chat_bubble_outline_rounded),
+          activeIcon: const Icon(Icons.chat_bubble_rounded),
           label: 'nav.chat'.tr(),
         ),
         BottomNavigationBarItem(

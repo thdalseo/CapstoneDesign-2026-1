@@ -1,7 +1,8 @@
 {
   "nav": {
     "home": "Trang chủ",
-    "matching": "Kết nối",
+    "connect": "Ghép đôi",
+    "matching": "Ghép đôi",
     "chat": "Nhắn tin",
     "help": "Hỗ trợ",
     "my": "Của tôi"
@@ -81,6 +82,7 @@
     "cat_medical": "Y tế",
     "cat_campus": "Khuôn viên",
     "cat_admin": "Hành chính",
+    "cat_other": "Khác",
     "badge_urgent": "Khẩn cấp",
     "badge_complete": "Hoàn thành",
     "helper_count": "{count} người hỗ trợ",

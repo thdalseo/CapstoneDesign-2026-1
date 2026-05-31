@@ -237,3 +237,4 @@ class _ChatBubbleState extends State<ChatBubble> {
     return '$period $hour:$min';
   }
 }
+

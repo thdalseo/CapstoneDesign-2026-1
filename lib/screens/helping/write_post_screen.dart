@@ -32,7 +32,7 @@ class _WritePostScreenState extends State<WritePostScreen> {
 
   // DB 저장값(한국어) 그대로 유지
   static const List<String> _categoryValues = [
-    '생활', '수업', '언어', '의료', '캠퍼스', '행정',
+    '생활', '수업', '언어', '의료', '캠퍼스', '행정', '기타',
   ];
 
   static const Map<String, String> _categoryKeys = {
@@ -42,6 +42,7 @@ class _WritePostScreenState extends State<WritePostScreen> {
     '의료': 'help.cat_medical',
     '캠퍼스': 'help.cat_campus',
     '행정': 'help.cat_admin',
+    '기타': 'help.cat_other',
   };
 
   bool get _isEditing => widget.initialData != null;

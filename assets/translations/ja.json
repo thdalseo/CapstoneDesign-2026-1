@@ -1,9 +1,10 @@
 {
   "nav": {
     "home": "ホーム",
+    "connect": "マッチング",
     "matching": "マッチング",
     "chat": "チャット",
-    "help": "ヘルプ",
+    "help": "サポート",
     "my": "マイ"
   },
 
@@ -81,6 +82,7 @@
     "cat_medical": "医療",
     "cat_campus": "キャンパス",
     "cat_admin": "行政",
+    "cat_other": "その他",
     "badge_urgent": "緊急",
     "badge_complete": "完了",
     "helper_count": "{count}人が支援",

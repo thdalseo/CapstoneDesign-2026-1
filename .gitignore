@@ -37,6 +37,7 @@ Pods/
 *.lock
 .dart_tool/
 .claude/
+CLAUDE.md
 
 # Python
 __pycache__/

@@ -55,8 +55,15 @@ class _ChattingScreenState extends State<ChattingScreen> {
             country: json['other_user_country'] as String? ?? '',
             major: json['other_user_major'] as String? ?? '',
             year: json['other_user_year'] as String? ?? '',
-            interests: const [],
-            description: '',
+            interests: (json['other_user_interests'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                const [],
+            languages: (json['other_user_languages'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                const [],
+            description: json['other_user_description'] as String? ?? '',
             matchPercent: 0,
           ),
           lastMessage: json['last_message'] as String?,

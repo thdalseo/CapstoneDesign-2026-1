@@ -7,9 +7,11 @@ Flutter match_service.dart 의 _mockMatches 와 같은 순서의 유저를 DB에
 """
 
 import bcrypt
+import datetime
 
 from app.core.database import SessionLocal
 from app.models.user import (
+    HelpPost,
     User,
     UserExchangePurpose,
     UserInterest,
@@ -514,5 +516,220 @@ def seed():
         db.close()
 
 
+# ── 게시판 샘플 데이터 ─────────────────────────────────────────────────────────
+# (author_email, category, title, place, date, time, memo, is_urgent)
+SEED_POSTS = [
+    # ── 생활 ──────────────────────────────────────────────────────────────────
+    # Amara (나이지리아 → 영어)
+    (
+        "amara@example.com", "생활",
+        "Can someone show me how to use the dormitory laundry?",
+        "글로벌인재관 1층",
+        datetime.date(2026, 6, 3), datetime.time(14, 0),
+        "I don't know how to charge the laundry card or use the coin washing machines. Could someone come with me and explain?",
+        True,
+    ),
+    # Linh (베트남 → 베트남어)
+    (
+        "linh@example.com", "생활",
+        "Ai có thể cùng tôi đi siêu thị gần trường không?",
+        "학생회관 정문",
+        datetime.date(2026, 6, 5), datetime.time(16, 30),
+        "Tôi chưa biết cách đi xe buýt đến Emart hay Homeplus. Mong có người cùng đi và hướng dẫn cho tôi!",
+        False,
+    ),
+    # Minh (베트남 → 영어)
+    (
+        "minh@example.com", "생활",
+        "Need help with T-money card top-up and bus transfers",
+        "학생회관 앞 버스정류장",
+        datetime.date(2026, 6, 4), datetime.time(9, 0),
+        "I'm not sure where to recharge my transportation card or how bus transfers work in Korea. Any help is appreciated!",
+        False,
+    ),
+
+    # ── 수업 ──────────────────────────────────────────────────────────────────
+    # Liam (영국 → 영어)
+    (
+        "liam@example.com", "수업",
+        "Looking for help with Data Structures assignment",
+        "제1공학관 304호",
+        datetime.date(2026, 6, 6), datetime.time(15, 0),
+        "I have a tree and graph implementation assignment and I'm struggling to follow the Korean instructions. Could anyone explain it to me in English or Korean slowly?",
+        True,
+    ),
+    # Chen Yu (중국 → 중국어)
+    (
+        "chenyu@example.com", "수업",
+        "期末考试算法一起复习吧！",
+        "중앙도서관 3층 스터디룸",
+        datetime.date(2026, 6, 10), datetime.time(13, 0),
+        "考试范围主要是动态规划和图搜索，想找2到3人一起整理笔记。欢迎任何人参加！",
+        False,
+    ),
+    # Li Wei (중국 → 중국어)
+    (
+        "liwei@example.com", "수업",
+        "经营统计学课听不懂，有人能帮忙解释吗？",
+        "경영관 201호",
+        datetime.date(2026, 6, 7), datetime.time(11, 0),
+        "教授用韩语讲课，我很难跟上。下课后能花30分钟给我用中文或英文解释一下吗？",
+        False,
+    ),
+
+    # ── 언어 ──────────────────────────────────────────────────────────────────
+    # Sofia (미국 → 영어)
+    (
+        "sofia@example.com", "언어",
+        "Looking for a Korean conversation partner!",
+        "학생회관 카페",
+        datetime.date(2026, 6, 4), datetime.time(14, 0),
+        "I'd love to do a language exchange — I'll help with English and you help me with Korean. Twice a week, about an hour each session. Let's chat!",
+        False,
+    ),
+    # Yuki (일본 → 일본어)
+    (
+        "yuki@example.com", "언어",
+        "日本語と韓国語の言語交換パートナーを募集しています",
+        "인문사회과학관 102호",
+        datetime.date(2026, 6, 8), datetime.time(15, 30),
+        "日本語はN2レベルです。韓国語を教えてもらいながら、日本語を一緒に練習しませんか？",
+        False,
+    ),
+    # Claire (프랑스 → 프랑스어)
+    (
+        "claire@example.com", "언어",
+        "J'enseigne le français en échange d'aide en coréen !",
+        "미래관 세미나실",
+        datetime.date(2026, 6, 11), datetime.time(16, 0),
+        "Je peux vous apprendre le français jusqu'au niveau A2. En échange, j'ai besoin d'aide pour pratiquer le coréen au quotidien.",
+        False,
+    ),
+
+    # ── 의료 ──────────────────────────────────────────────────────────────────
+    # Marco (이탈리아 → 영어)
+    (
+        "marco@example.com", "의료",
+        "Urgent! Need interpreter at school clinic",
+        "의생명과학관 1층 학생의원",
+        datetime.date(2026, 6, 2), datetime.time(10, 0),
+        "I have a bad stomachache and need to see a doctor right away, but I can't explain my symptoms in Korean. Please help me urgently!",
+        True,
+    ),
+    # Ethan (미국 → 영어)
+    (
+        "ethan@example.com", "의료",
+        "Need help buying cold medicine at the pharmacy",
+        "정문 앞 약국",
+        datetime.date(2026, 6, 3), datetime.time(13, 0),
+        "I have cold symptoms but can't communicate with the pharmacist. Could someone help me explain my symptoms and find the right medicine?",
+        False,
+    ),
+
+    # ── 캠퍼스 ────────────────────────────────────────────────────────────────
+    # Haruto (일본 → 일본어)
+    (
+        "haruto@example.com", "캠퍼스",
+        "履修登録のシステムの使い方を教えてください",
+        "미래관 로비",
+        datetime.date(2026, 6, 9), datetime.time(10, 0),
+        "履修登録の時期が近づいていますが、ポータルの使い方がわかりません。一緒に画面を見ながら説明していただけますか？",
+        True,
+    ),
+    # Amara (나이지리아 → 영어)
+    (
+        "amara@example.com", "캠퍼스",
+        "Can someone help me get my student ID card?",
+        "글로벌인재관 행정실",
+        datetime.date(2026, 6, 4), datetime.time(11, 30),
+        "I still don't have my student ID. I'm not sure where to apply or what documents I need. Could someone guide me through the process?",
+        False,
+    ),
+    # Linh (베트남 → 베트남어)
+    (
+        "linh@example.com", "캠퍼스",
+        "Nhờ hướng dẫn cách đặt chỗ thư viện qua app",
+        "중앙도서관 안내데스크",
+        datetime.date(2026, 6, 5), datetime.time(9, 30),
+        "Tôi đã cài app đặt chỗ thư viện nhưng toàn tiếng Hàn nên không biết dùng. Nhờ ai đó hướng dẫn một lần là được!",
+        False,
+    ),
+
+    # ── 행정 ──────────────────────────────────────────────────────────────────
+    # Linh (베트남 → 베트남어)
+    (
+        "linh@example.com", "행정",
+        "Cần giúp đỡ gia hạn thẻ đăng ký người nước ngoài (gấp!)",
+        "산학협력관 1층",
+        datetime.date(2026, 6, 2), datetime.time(9, 0),
+        "Thẻ của tôi còn 2 tuần nữa là hết hạn. Tôi không biết chuẩn bị giấy tờ gì. Có ai cùng đi cục xuất nhập cảnh với tôi không?",
+        True,
+    ),
+    # Li Wei (중국 → 중국어)
+    (
+        "liwei@example.com", "행정",
+        "怎么在网上申请成绩证明书和在校证明书？",
+        "행정관 종합민원실",
+        datetime.date(2026, 6, 6), datetime.time(14, 0),
+        "我不知道怎么在学校门户网站上申请证明文件，也不知道打印机在哪里。能帮我一下吗？",
+        False,
+    ),
+    # Minh (베트남 → 영어)
+    (
+        "minh@example.com", "행정",
+        "Looking for help with D-2 visa extension documents",
+        "미래관 국제교류팀",
+        datetime.date(2026, 6, 12), datetime.time(10, 30),
+        "I need to extend my D-2 student visa but don't know the required documents or the submission process. Anyone who has done this before, please help!",
+        False,
+    ),
+]
+
+
+def seed_help_posts():
+    db = SessionLocal()
+    try:
+        # 기존 샘플 게시글 모두 초기화 후 재삽입
+        existing_emails = {d["email"] for d in SEED_USERS}
+        users = {
+            u.email: u
+            for u in db.query(User).filter(User.email.in_(existing_emails)).all()
+        }
+
+        # 샘플 유저가 작성한 게시글만 삭제
+        for user in users.values():
+            db.query(HelpPost).filter(HelpPost.author_id == user.id).delete(
+                synchronize_session=False
+            )
+        db.flush()
+
+        count = 0
+        for (email, category, title, place, date, time, memo, is_urgent) in SEED_POSTS:
+            author = users.get(email)
+            if not author:
+                print(f"  ⚠️ 유저 없음: {email}")
+                continue
+            db.add(HelpPost(
+                author_id=author.id,
+                category=category,
+                title=title,
+                place=place,
+                date=date,
+                time=time,
+                memo=memo,
+                is_urgent=is_urgent,
+            ))
+            count += 1
+
+        db.commit()
+        print(f"게시글 시딩 완료! {count}개 추가")
+    except Exception as e:
+        db.rollback()
+        print(f"오류: {e}")
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     seed()
+    seed_help_posts()
