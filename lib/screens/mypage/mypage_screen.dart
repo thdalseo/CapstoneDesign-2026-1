@@ -11,6 +11,7 @@ import '../../widgets/mypage/mypage_menu_item.dart';
 import '../onboarding/onboarding_screen.dart';
 import 'edit_profile_screen.dart';
 import 'match_weight_screen.dart';
+import 'session_history_screen.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -84,6 +85,21 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     );
                     if (saved == true) _loadUser();
                   },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            MyPageSection(
+              title: 'mypage.section_exchange'.tr(),
+              items: [
+                MyPageMenuItem(
+                  icon: Icons.calendar_month_rounded,
+                  label: 'mypage.session_history'.tr(),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const SessionHistoryScreen()),
+                  ),
                 ),
               ],
             ),

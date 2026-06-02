@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "主页",
-    "connect": "匹配",
     "matching": "匹配",
     "chat": "聊天",
     "help": "帮助",
@@ -25,8 +24,9 @@
     "subtitle": "为您介绍与您相匹配的朋友。",
     "profile_incomplete_title": "请完善您的个人资料！",
     "profile_incomplete_desc": "设置年级、兴趣和交流目的，\n即可找到与您匹配的朋友。",
-    "go_to_profile": "去设置个人资料",
+    "go_to_profile": "设置个人资料",
     "no_matches": "暂无推荐好友",
+    "no_matches_desc": "完善您的资料\n我们将为您推荐匹配的朋友！",
     "next_recommendations": "查看更多推荐",
     "back_to_top": "返回顶部"
   },
@@ -62,7 +62,25 @@
       "周末通常做什么？",
       "你有什么兴趣爱好？",
       "你的校园生活怎么样？"
-    ]
+    ],
+    "correct_title": "AI句子纠正",
+    "correct_already_good": "句子已经很自然了 ✓",
+    "correct_original": "原文",
+    "correct_suggested": "修正建议",
+    "correct_send_original": "发送原文",
+    "correct_send_corrected": "发送修正版",
+    "correct_error": "纠正过程中发生错误",
+    "session_title": "语言交流会话",
+    "session_sent": "已发送会话请求",
+    "session_received": "收到会话请求",
+    "session_teach": "教授的语言",
+    "session_learn": "学习的语言",
+    "session_duration": "会话时长",
+    "session_minutes": "{n}分钟会话",
+    "session_start": "开始会话",
+    "session_same_lang": "教授语言与学习语言不能相同",
+    "session_running": "会话进行中",
+    "session_done": "完成"
   },
 
   "help": {
@@ -171,7 +189,44 @@
     "delete_account_title": "注销账户",
     "delete_account_desc": "注销后所有数据将被删除，\n无法恢复。",
     "password_hint": "输入密码",
-    "withdraw": "注销账户"
+    "withdraw": "注销账户",
+    "section_exchange": "语言交流",
+    "session_history": "会话记录",
+    "session_days": "本月会话天数",
+    "session_total_min": "本月总时长",
+    "session_no_record": "暂无记录",
+    "session_no_record_desc": "完成语言交流会话后\n记录将保存在这里！",
+    "session_select_day": "请选择日期"
+  },
+
+  "auth": {
+    "signup_title": "注册",
+    "name": "姓名",
+    "name_hint": "请输入姓名",
+    "name_required": "请输入姓名",
+    "college": "学院",
+    "college_hint": "请选择学院",
+    "college_required": "请选择学院",
+    "dept": "专业",
+    "dept_hint": "请选择专业",
+    "dept_hint_first": "请先选择学院",
+    "dept_required": "请选择专业",
+    "country": "国家",
+    "country_hint": "请选择国家",
+    "country_required": "请选择国家",
+    "email": "学校邮箱",
+    "email_hint": "邮箱账号",
+    "email_required": "请输入邮箱",
+    "password": "密码",
+    "password_hint": "请输入8位以上",
+    "password_required": "请输入密码",
+    "password_min": "密码需要8位以上",
+    "password_confirm": "确认密码",
+    "password_confirm_hint": "请再次输入密码",
+    "password_confirm_required": "请确认密码",
+    "password_mismatch": "密码不一致",
+    "submit": "验证",
+    "language": "界面语言"
   },
 
   "weight": {

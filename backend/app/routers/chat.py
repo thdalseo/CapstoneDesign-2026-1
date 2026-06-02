@@ -91,9 +91,6 @@ def get_or_create_room(req: CreateRoomRequest, db: Session = Depends(get_db)):
         .first()
     )
     if not room:
-        for uid in [a, b]:
-            if not db.query(User).filter(User.id == uid).first():
-                raise HTTPException(status_code=404, detail=f"유저 {uid}를 찾을 수 없습니다.")
         room = ChatRoom(user_id_a=a, user_id_b=b)
         db.add(room)
         db.commit()
@@ -115,8 +112,6 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
     for room in rooms:
         other_id = room.user_id_b if room.user_id_a == user_id else room.user_id_a
         other = db.query(User).filter(User.id == other_id).first()
-        if not other:
-            continue
         last_msg = (
             db.query(ChatMessage)
             .filter(ChatMessage.room_id == room.id)
@@ -144,14 +139,14 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
 
         result.append({
             "room_id": room.id,
-            "other_user_id": str(other.id),
-            "other_user_name": other.name,
-            "other_user_country": other.country or "",
-            "other_user_major": other.major or "",
-            "other_user_year": other.year or "",
-            "other_user_interests": [i.interest for i in other.interests],
-            "other_user_languages": [l.language for l in other.languages],
-            "other_user_description": other.description or "",
+            "other_user_id": str(other_id),
+            "other_user_name": other.name if other else f"User {other_id}",
+            "other_user_country": (other.country or "") if other else "",
+            "other_user_major": (other.major or "") if other else "",
+            "other_user_year": (other.year or "") if other else "",
+            "other_user_interests": [i.interest for i in other.interests] if other else [],
+            "other_user_languages": [l.language for l in other.languages] if other else [],
+            "other_user_description": (other.description or "") if other else "",
             "last_message": last_msg.content if last_msg else None,
             "last_message_time": last_msg.created_at.isoformat() if last_msg else None,
             "unread_count": unread_count,
@@ -535,6 +530,155 @@ async def get_icebreaking_questions(req: IcebreakingRequest):
     return {"questions": fallback}
 
 
+# ── AI 문장 교정 ──────────────────────────────────────────────────────────────
+
+class CorrectionRequest(BaseModel):
+    text: str
+    locale: str = "ko"
+
+
+_CORRECTION_PROMPT = {
+    "ko": """\
+아래 문장을 엄격하게 검토하세요. 이 문장을 작성한 사람은 한국어를 배우는 외국인일 수 있습니다.
+
+문장: "{text}"
+
+반드시 오류로 판단해야 하는 경우 (is_correct=false):
+1. 어순이 어색한 경우 (예: "갔었어요 어제" → "어제 갔어요")
+2. 조사 오류 (예: "음악을 관심 있어요" → "음악에 관심 있어요")
+3. 시제 오류 (예: 과거/현재/미래 혼용)
+4. 어휘 선택이 어색한 경우
+5. 문법적으로 틀린 경우
+
+판단 기준:
+- 한국어 원어민이 자연스럽게 쓰는 문장인지 엄격하게 판단
+- 조금이라도 어색하면 is_correct=false로 처리
+- 완벽히 자연스러울 때만 is_correct=true
+
+출력:
+- is_correct=false면: corrected에 교정된 문장, explanation에 오류 이유 한 줄 (한국어, 50자 이내)
+- is_correct=true면: corrected는 원문 그대로, explanation은 빈 문자열
+- JSON만 반환: {{"is_correct": true/false, "corrected": "...", "explanation": "..."}}""",
+
+    "en": """\
+Please review the following sentence strictly. The writer may be a non-native English speaker.
+
+Sentence: "{text}"
+
+Mark as incorrect (is_correct=false) if:
+1. Word order is unnatural
+2. Wrong preposition or article
+3. Tense error
+4. Awkward word choice
+5. Grammatically wrong
+
+Rules:
+- Judge as a native English speaker would — be strict
+- Even slightly unnatural = is_correct=false
+- Only mark true if perfectly natural
+- corrected: fixed sentence if false, original if true
+- explanation: one line in English (under 50 chars) if false, empty string if true
+- Return JSON only: {{"is_correct": true/false, "corrected": "...", "explanation": "..."}}""",
+
+    "zh": """\
+请严格检查以下句子。写这句话的人可能是正在学中文的外国人。
+
+句子："{text}"
+
+以下情况必须判断为错误（is_correct=false）：
+1. 语序不自然
+2. 助词/介词用错
+3. 时态错误
+4. 词汇选择不当
+5. 语法错误
+
+判断标准：
+- 以母语者标准严格判断
+- 稍有不自然即为is_correct=false
+- 完全自然才可以is_correct=true
+- corrected：错误时填修正后句子，正确时填原文
+- explanation：错误时用中文一句话说明原因（50字以内），正确时为空字符串
+- 只返回JSON：{{"is_correct": true/false, "corrected": "...", "explanation": "..."}}""",
+
+    "vi": """\
+Hãy kiểm tra câu sau một cách nghiêm ngặt. Người viết có thể đang học tiếng Việt.
+
+Câu: "{text}"
+
+Phải đánh dấu là sai (is_correct=false) nếu:
+1. Trật tự từ không tự nhiên
+2. Giới từ hoặc trợ từ sai
+3. Lỗi thì
+4. Chọn từ không phù hợp
+5. Sai ngữ pháp
+
+Tiêu chí:
+- Đánh giá theo tiêu chuẩn người bản ngữ — nghiêm khắc
+- Hơi không tự nhiên = is_correct=false
+- Chỉ true khi hoàn toàn tự nhiên
+- corrected: câu đã sửa nếu sai, nguyên bản nếu đúng
+- explanation: một câu tiếng Việt giải thích lỗi (dưới 50 ký tự) nếu sai, chuỗi rỗng nếu đúng
+- Chỉ trả về JSON: {{"is_correct": true/false, "corrected": "...", "explanation": "..."}}""",
+
+    "ja": """\
+以下の文を厳しく確認してください。書いた人は日本語を学んでいる外国人かもしれません。
+
+文: "{text}"
+
+誤りと判断すべき場合（is_correct=false）：
+1. 語順が不自然
+2. 助詞の誤り
+3. 時制の誤り
+4. 語彙の選択が不自然
+5. 文法的に誤っている
+
+判断基準：
+- ネイティブの基準で厳しく判断
+- 少しでも不自然ならis_correct=false
+- 完全に自然な場合のみis_correct=true
+- corrected：誤りなら修正後の文、正しければ原文のまま
+- explanation：誤りなら日本語で一言説明（50文字以内）、正しければ空文字
+- JSONのみ返す: {{"is_correct": true/false, "corrected": "...", "explanation": "..."}}""",
+}
+
+
+async def _call_gemini_correction(prompt: str, api_key: str) -> dict:
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
+    )
+    return json.loads(response.text)
+
+
+@router.post("/chat/correct")
+async def correct_sentence(req: CorrectionRequest):
+    """입력 문장을 AI가 교정한다. Gemini 실패 시 원문 그대로 반환."""
+    locale = req.locale if req.locale in _CORRECTION_PROMPT else "ko"
+    template = _CORRECTION_PROMPT[locale]
+    prompt = template.format(text=req.text.replace('"', "'"))
+
+    gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not gemini_key:
+        return {"is_correct": True, "corrected": req.text, "explanation": ""}
+
+    try:
+        result = await _call_gemini_correction(prompt, gemini_key)
+        return {
+            "is_correct": bool(result.get("is_correct", True)),
+            "corrected": result.get("corrected", req.text),
+            "explanation": result.get("explanation", ""),
+        }
+    except Exception as e:
+        print(f"[correct] Gemini 실패: {e}")
+        return {"is_correct": True, "corrected": req.text, "explanation": ""}
+
+
 # ── WebSocket ─────────────────────────────────────────────────────────────────
 
 @router.websocket("/ws/chat/{room_id}")
@@ -563,12 +707,25 @@ async def websocket_chat(
                 continue
 
             content = (data.get("content") or "").strip()
-            sender_id = data.get("sender_id")
             if not content:
                 continue
 
-            # 금칙어 검사 — 발신자에게만 에러 응답, 연결은 유지
-            if contains_profanity(content):
+            # sender_id 유효성 검사 — 비어 있거나 정수로 변환 불가능하면 무시
+            raw_sender = data.get("sender_id")
+            try:
+                sender_id_int = int(raw_sender)
+                if sender_id_int <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                await ws.send_json({
+                    "type": "error",
+                    "code": "invalid_sender",
+                    "message": "유효하지 않은 사용자입니다. 다시 로그인해주세요.",
+                })
+                continue
+
+            # 금칙어 검사 — __로 시작하는 시스템/세션 메시지는 제외
+            if not content.startswith('__') and contains_profanity(content):
                 await ws.send_json({
                     "type": "error",
                     "code": "profanity",
@@ -579,7 +736,7 @@ async def websocket_chat(
             # DB 저장
             msg = ChatMessage(
                 room_id=room_id,
-                sender_id=int(sender_id) if sender_id is not None else None,
+                sender_id=sender_id_int,
                 content=content,
                 is_system=False,
             )

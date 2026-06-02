@@ -44,53 +44,53 @@ class _WeightDef {
 
 const _kDefs = [
   _WeightDef(
-    key: 'purpose',
-    labelKey: 'weight.purpose',
-    descKey: 'weight.purpose_desc',
-    color: Color(0xFF4C80AF),
-    icon: Icons.swap_horiz_rounded,
-  ),
-  _WeightDef(
-    key: 'interests',
-    labelKey: 'weight.interests',
-    descKey: 'weight.interests_desc',
-    color: Color(0xFF3ABBA0),
-    icon: Icons.favorite_border_rounded,
-  ),
-  _WeightDef(
-    key: 'language',
-    labelKey: 'weight.language',
-    descKey: 'weight.language_desc',
-    color: Color(0xFF8B5CF6),
-    icon: Icons.translate_rounded,
-  ),
-  _WeightDef(
-    key: 'personality',
-    labelKey: 'weight.personality',
-    descKey: 'weight.personality_desc',
-    color: Color(0xFFF59E0B),
-    icon: Icons.psychology_outlined,
-  ),
-  _WeightDef(
     key: 'major',
     labelKey: 'weight.major',
     descKey: 'weight.major_desc',
-    color: Color(0xFFEF4444),
+    color: AppTheme.primary,        // 0번 색: 파스텔 블루
     icon: Icons.school_outlined,
   ),
   _WeightDef(
     key: 'year',
     labelKey: 'weight.year',
     descKey: 'weight.year_desc',
-    color: Color(0xFF10B981),
+    color: AppTheme.mint,           // 1번 색: 파스텔 씨폼
     icon: Icons.calendar_today_outlined,
   ),
   _WeightDef(
     key: 'nationality',
     labelKey: 'weight.nationality',
     descKey: 'weight.nationality_desc',
-    color: Color(0xFFEC4899),
+    color: Color(0xFFA78BFA),        // 2번 색: 파스텔 라벤더
     icon: Icons.public_rounded,
+  ),
+  _WeightDef(
+    key: 'purpose',
+    labelKey: 'weight.purpose',
+    descKey: 'weight.purpose_desc',
+    color: Color(0xFFFBBF24),       // 3번 색: 파스텔 앰버
+    icon: Icons.swap_horiz_rounded,
+  ),
+  _WeightDef(
+    key: 'interests',
+    labelKey: 'weight.interests',
+    descKey: 'weight.interests_desc',
+    color: Color(0xFFFC7171),       // 4번 색: 파스텔 로즈
+    icon: Icons.favorite_border_rounded,
+  ),
+  _WeightDef(
+    key: 'language',
+    labelKey: 'weight.language',
+    descKey: 'weight.language_desc',
+    color: Color(0xFF34D399),       // 5번 색: 파스텔 에메랄드
+    icon: Icons.translate_rounded,
+  ),
+  _WeightDef(
+    key: 'personality',
+    labelKey: 'weight.personality',
+    descKey: 'weight.personality_desc',
+    color: Color(0xFFF472B6),       // 6번 색: 파스텔 핑크
+    icon: Icons.psychology_outlined,
   ),
 ];
 
@@ -113,13 +113,13 @@ class _MatchWeightScreenState extends State<MatchWeightScreen> {
   void initState() {
     super.initState();
     _levels = [
+      _rawToLevel(widget.user.weightMajor),
+      _rawToLevel(widget.user.weightYear),
+      _rawToLevel(widget.user.weightNationality),
       _rawToLevel(widget.user.weightPurpose),
       _rawToLevel(widget.user.weightInterests),
       _rawToLevel(widget.user.weightLanguage),
       _rawToLevel(widget.user.weightPersonality),
-      _rawToLevel(widget.user.weightMajor),
-      _rawToLevel(widget.user.weightYear),
-      _rawToLevel(widget.user.weightNationality),
     ];
   }
 

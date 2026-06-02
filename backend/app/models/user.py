@@ -270,6 +270,28 @@ class LanguageExchangePost(Base):
     author = relationship("User", foreign_keys=[author_id])
 
 
+class LanguageSession(Base):
+    """언어교환 세션 기록 — 사용자별 달력에 표시."""
+    __tablename__ = "language_sessions"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    partner_id = Column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    partner_name = Column(String(50), nullable=False, default="")
+    teach_language = Column(String(50), nullable=False)   # 내가 가르친 언어
+    learn_language = Column(String(50), nullable=False)   # 내가 배운 언어
+    minutes = Column(Integer, nullable=False, default=0)
+    session_date = Column(String(10), nullable=False)     # "2026-06-02"
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+    partner = relationship("User", foreign_keys=[partner_id])
+
+
 class EmailVerification(Base):
     __tablename__ = "email_verifications"
 

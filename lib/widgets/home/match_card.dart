@@ -4,20 +4,22 @@ import '../../constants/profile_labels.dart';
 import '../../models/match_user.dart';
 import '../../services/translation_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/avatar_color.dart';
 
-// 관심사 태그에 순서대로 적용할 색상
+// 관심사 태그에 순서대로 적용할 색상 (파스텔 팔레트)
 const _kTagColors = [
-  Color(0xFF4C80AF),
-  Color(0xFF3ABBA0),
-  Color(0xFF8B5CF6),
-  Color(0xFFF59E0B),
-  Color(0xFFEF4444),
-  Color(0xFFEC4899),
+  AppTheme.primary,        // 파스텔 블루
+  AppTheme.mint,           // 파스텔 씨폼
+  Color(0xFFA78BFA),       // 파스텔 라벤더
+  Color(0xFFFBBF24),       // 파스텔 앰버
+  Color(0xFFFC7171),       // 파스텔 로즈
+  Color(0xFFF472B6),       // 파스텔 핑크
 ];
 
 class MatchCard extends StatefulWidget {
   final MatchUser user;
   final bool isMatched;
+  final bool isInChat;   // 이미 채팅방이 있는 유저 여부
   final VoidCallback? onMatchTap;
   final VoidCallback? onChatTap;
 
@@ -25,6 +27,7 @@ class MatchCard extends StatefulWidget {
     super.key,
     required this.user,
     this.isMatched = false,
+    this.isInChat = false,
     this.onMatchTap,
     this.onChatTap,
   });
@@ -60,6 +63,7 @@ class _MatchCardState extends State<MatchCard> {
               child: _Body(
                 user: widget.user,
                 isMatched: widget.isMatched,
+                isInChat: widget.isInChat,
                 matchHovered: _matchHovered,
                 chatHovered: _chatHovered,
                 onMatchEnter: () => setState(() => _matchHovered = true),
@@ -195,6 +199,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarColor = avatarColorFor(user.name);
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
       decoration: BoxDecoration(
@@ -208,58 +213,57 @@ class _Header extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 매칭도 뱃지 + 안내문구 — 탭하면 매칭 이유 바텀시트
+          // 매칭도 뱃지 — 탭하면 매칭 이유 바텀시트
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () => _showReasonSheet(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.mint.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.mint.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${user.matchPercent}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.mint,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_awesome_rounded,
-                            size: 12, color: AppTheme.mint),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${user.matchPercent}%',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.mint,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.info_outline_rounded,
-                            size: 11, color: AppTheme.mint),
-                      ],
-                    ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    const Icon(Icons.info_outline_rounded,
+                        size: 11, color: AppTheme.mint),
+                  ],
+                ),
               ),
             ),
           ),
           const SizedBox(height: 10),
 
-          // 아바타
+          // 아바타 (이름 기반 색상 + 첫 글자)
           Container(
             width: 80,
             height: 80,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0xFFE8F0FE),
+              color: avatarColor.withValues(alpha: 0.15),
             ),
-            child: const Icon(Icons.person_rounded,
-                color: AppTheme.primary, size: 42),
+            child: Center(
+              child: Text(
+                avatarInitial(user.name),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: avatarColor,
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -303,6 +307,7 @@ class _Header extends StatelessWidget {
 class _Body extends StatefulWidget {
   final MatchUser user;
   final bool isMatched;
+  final bool isInChat;
   final bool matchHovered;
   final bool chatHovered;
   final VoidCallback? onMatchTap;
@@ -315,6 +320,7 @@ class _Body extends StatefulWidget {
   const _Body({
     required this.user,
     required this.isMatched,
+    required this.isInChat,
     required this.matchHovered,
     required this.chatHovered,
     this.onMatchTap,
@@ -371,19 +377,20 @@ class _BodyState extends State<_Body> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // 스크롤 가능한 영역 (태그 + 자기소개 + 번역)
           Expanded(
             child: SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // 관심사 태그 (색상 구분)
                   Wrap(
                     spacing: 7,
                     runSpacing: 7,
+                    alignment: WrapAlignment.center,
                     children: widget.user.interests
                         .take(3)
                         .toList()
@@ -417,6 +424,7 @@ class _BodyState extends State<_Body> {
                     Wrap(
                       spacing: 5,
                       runSpacing: 5,
+                      alignment: WrapAlignment.center,
                       children: widget.user.languages.take(3).map((lang) {
                         return Container(
                           padding: const EdgeInsets.symmetric(
@@ -452,6 +460,7 @@ class _BodyState extends State<_Body> {
                   // 자기소개
                   Text(
                     widget.user.description,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 13.5,
                       color: AppTheme.textPrimary,
@@ -480,6 +489,7 @@ class _BodyState extends State<_Body> {
                           Flexible(
                             child: Text(
                               _translatedDesc!,
+                              textAlign: TextAlign.center,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppTheme.textPrimary,
@@ -491,43 +501,32 @@ class _BodyState extends State<_Body> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
 
-                  // 번역 버튼
-                  GestureDetector(
-                    onTap: _isTranslating ? null : _onTranslateTap,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_isTranslating)
-                          const SizedBox(
-                            width: 11,
-                            height: 11,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 1.5, color: AppTheme.primary),
-                          )
-                        else
-                          Icon(Icons.translate_rounded,
-                              size: 12,
-                              color: _showTranslation
-                                  ? AppTheme.primary
-                                  : AppTheme.textSecondary),
-                        const SizedBox(width: 3),
-                        Text(
-                          _isTranslating
-                              ? 'chat.translating'.tr()
-                              : _showTranslation
-                                  ? 'chat.hide_post_translation'.tr()
-                                  : 'chat.translate_post'.tr(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: _showTranslation
-                                ? AppTheme.primary
-                                : AppTheme.textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                  // 번역 버튼 — 우측 구석
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: _isTranslating ? null : _onTranslateTap,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: _isTranslating
+                            ? const SizedBox(
+                                width: 13,
+                                height: 13,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: AppTheme.primary),
+                              )
+                            : Icon(
+                                Icons.translate_rounded,
+                                size: 15,
+                                color: _showTranslation
+                                    ? AppTheme.primary
+                                    : AppTheme.textSecondary
+                                        .withValues(alpha: 0.5),
+                              ),
+                      ),
                     ),
                   ),
                 ],
@@ -606,6 +605,7 @@ class _BodyState extends State<_Body> {
   }
 
   Widget _chatButton(BuildContext context) {
+    final active = widget.chatHovered;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => widget.onChatEnter?.call(),
@@ -616,12 +616,12 @@ class _BodyState extends State<_Body> {
           duration: const Duration(milliseconds: 180),
           height: 46,
           decoration: BoxDecoration(
-            color: widget.chatHovered ? AppTheme.primary : Colors.transparent,
+            color: active ? AppTheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: widget.chatHovered ? AppTheme.primary : AppTheme.border,
+              color: active ? AppTheme.primary : AppTheme.border,
             ),
-            boxShadow: widget.chatHovered
+            boxShadow: active
                 ? [
                     BoxShadow(
                       color: AppTheme.primary.withValues(alpha: 0.25),
@@ -635,11 +635,14 @@ class _BodyState extends State<_Body> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                widget.chatHovered
+                // 이미 채팅 중이면 채워진 아이콘
+                widget.isInChat
                     ? Icons.chat_bubble_rounded
-                    : Icons.chat_bubble_outline_rounded,
+                    : (active
+                        ? Icons.chat_bubble_rounded
+                        : Icons.chat_bubble_outline_rounded),
                 size: 17,
-                color: widget.chatHovered ? Colors.white : AppTheme.textSecondary,
+                color: active ? Colors.white : AppTheme.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
@@ -647,9 +650,21 @@ class _BodyState extends State<_Body> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: widget.chatHovered ? Colors.white : AppTheme.textSecondary,
+                  color: active ? Colors.white : AppTheme.textSecondary,
                 ),
               ),
+              // 이미 채팅 중이면 초록 점 표시
+              if (widget.isInChat && !active) ...[
+                const SizedBox(width: 5),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppTheme.mint,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

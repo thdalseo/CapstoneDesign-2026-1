@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../services/auth_service.dart';
@@ -5,6 +6,15 @@ import '../../theme/app_theme.dart';
 import '../../constants/knu_data.dart';
 import '../../widgets/auth/dropdown_field.dart';
 import 'email_verify_screen.dart';
+
+// 지원 언어 목록
+const _kLangs = [
+  {'code': 'ko', 'flag': '🇰🇷', 'label': '한국어'},
+  {'code': 'en', 'flag': '🇺🇸', 'label': 'English'},
+  {'code': 'ja', 'flag': '🇯🇵', 'label': '日本語'},
+  {'code': 'zh', 'flag': '🇨🇳', 'label': '中文'},
+  {'code': 'vi', 'flag': '🇻🇳', 'label': 'Tiếng Việt'},
+];
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -41,9 +51,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedCollege == null) { _showSnackBar('단과대를 선택해주세요'); return; }
-    if (_selectedDept == null) { _showSnackBar('학부/학과를 선택해주세요'); return; }
-    if (_selectedCountry == null) { _showSnackBar('국가를 선택해주세요'); return; }
+    if (_selectedCollege == null) { _showSnackBar('auth.college_required'.tr()); return; }
+    if (_selectedDept == null)    { _showSnackBar('auth.dept_required'.tr()); return; }
+    if (_selectedCountry == null) { _showSnackBar('auth.country_required'.tr()); return; }
 
     setState(() => _isLoading = true);
 
@@ -56,7 +66,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => _isLoading = false);
       return;
     } catch (_) {
-      _showSnackBar('서버에 연결할 수 없어요. 네트워크를 확인해주세요.');
+      _showSnackBar('common.network_error'.tr());
       setState(() => _isLoading = false);
       return;
     }
@@ -91,6 +101,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentLang = context.locale.languageCode;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -100,9 +112,9 @@ class _SignupScreenState extends State<SignupScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '회원가입',
-          style: TextStyle(
+        title: Text(
+          'auth.signup_title'.tr(),
+          style: const TextStyle(
             color: AppTheme.textPrimary,
             fontWeight: FontWeight.w600,
             fontSize: 16,
@@ -117,19 +129,76 @@ class _SignupScreenState extends State<SignupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 이름
-              _label('이름'),
+              // ── 언어 선택 ──────────────────────────────────────────────────
+              _label('auth.language'.tr()),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const spacing = 8.0;
+                  final itemWidth =
+                      (constraints.maxWidth - spacing * (_kLangs.length - 1)) /
+                          _kLangs.length;
+                  return Row(
+                    children: [
+                      for (int i = 0; i < _kLangs.length; i++) ...[
+                        if (i > 0) const SizedBox(width: spacing),
+                        GestureDetector(
+                          onTap: () =>
+                              context.setLocale(Locale(_kLangs[i]['code']!)),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: itemWidth,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _kLangs[i]['code'] == currentLang
+                                  ? AppTheme.primary
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(
+                                color: _kLangs[i]['code'] == currentLang
+                                    ? AppTheme.primary
+                                    : const Color(0xFFDDE4EE),
+                                width: _kLangs[i]['code'] == currentLang
+                                    ? 1.5
+                                    : 1,
+                              ),
+                            ),
+                            child: Text(
+                              '${_kLangs[i]['flag']} ${_kLangs[i]['label']}',
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _kLangs[i]['code'] == currentLang
+                                    ? Colors.white
+                                    : AppTheme.textSecondary,
+                                fontWeight: _kLangs[i]['code'] == currentLang
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // ── 이름 ──────────────────────────────────────────────────────
+              _label('auth.name'.tr()),
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(hintText: '이름을 입력해주세요'),
-                validator: (v) => v == null || v.isEmpty ? '이름을 입력해주세요' : null,
+                decoration: InputDecoration(hintText: 'auth.name_hint'.tr()),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'auth.name_required'.tr() : null,
               ),
               const SizedBox(height: 20),
 
-              // 단과대
-              _label('단과대'),
+              // ── 단과대 ────────────────────────────────────────────────────
+              _label('auth.college'.tr()),
               SelectorButton(
-                hint: '단과대를 선택해주세요',
+                hint: 'auth.college_hint'.tr(),
                 value: _selectedCollege,
                 onTap: () async {
                   final result = await showModalBottomSheet<String>(
@@ -137,22 +206,27 @@ class _SignupScreenState extends State<SignupScreen> {
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => SimplePickerSheet(
-                      title: '단과대',
+                      title: 'auth.college'.tr(),
                       items: knuDepartments.keys.toList(),
                       selectedItem: _selectedCollege,
                     ),
                   );
                   if (result != null) {
-                    setState(() { _selectedCollege = result; _selectedDept = null; });
+                    setState(() {
+                      _selectedCollege = result;
+                      _selectedDept = null;
+                    });
                   }
                 },
               ),
               const SizedBox(height: 20),
 
-              // 학부/학과
-              _label('학부/학과'),
+              // ── 학부/학과 ─────────────────────────────────────────────────
+              _label('auth.dept'.tr()),
               SelectorButton(
-                hint: _selectedCollege == null ? '단과대를 먼저 선택해주세요' : '학부/학과를 선택해주세요',
+                hint: _selectedCollege == null
+                    ? 'auth.dept_hint_first'.tr()
+                    : 'auth.dept_hint'.tr(),
                 value: _selectedDept,
                 onTap: _selectedCollege == null
                     ? null
@@ -162,7 +236,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (_) => SimplePickerSheet(
-                            title: '학부/학과',
+                            title: 'auth.dept'.tr(),
                             items: _deptList,
                             selectedItem: _selectedDept,
                           ),
@@ -172,95 +246,107 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 20),
 
-              // 국가
-              _label('국가'),
+              // ── 국가 ──────────────────────────────────────────────────────
+              _label('auth.country'.tr()),
               SelectorButton(
-                hint: '국가를 선택해주세요',
+                hint: 'auth.country_hint'.tr(),
                 value: _selectedCountry,
                 onTap: () async {
                   final result = await showModalBottomSheet<String>(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => CountryPickerSheet(selectedCountry: _selectedCountry),
+                    builder: (_) =>
+                        CountryPickerSheet(selectedCountry: _selectedCountry),
                   );
                   if (result != null) setState(() => _selectedCountry = result);
                 },
               ),
               const SizedBox(height: 20),
 
-              // 학교 이메일
-              _label('학교 이메일'),
+              // ── 학교 이메일 ───────────────────────────────────────────────
+              _label('auth.email'.tr()),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
                       controller: _emailPrefixController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(hintText: '이메일 아이디'),
-                      validator: (v) => v == null || v.isEmpty ? '이메일을 입력해주세요' : null,
+                      decoration: InputDecoration(hintText: 'auth.email_hint'.tr()),
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'auth.email_required'.tr()
+                          : null,
                     ),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text(
                       '@kangwon.ac.kr',
-                      style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+                      style: TextStyle(
+                          fontSize: 14, color: AppTheme.textSecondary),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
 
-              // 비밀번호
-              _label('비밀번호'),
+              // ── 비밀번호 ──────────────────────────────────────────────────
+              _label('auth.password'.tr()),
               TextFormField(
                 controller: _passwordController,
                 obscureText: !_passwordVisible,
                 decoration: InputDecoration(
-                  hintText: '8자 이상 입력해주세요',
+                  hintText: 'auth.password_hint'.tr(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _passwordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _passwordVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                       color: AppTheme.textSecondary,
                     ),
-                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
+                    onPressed: () =>
+                        setState(() => _passwordVisible = !_passwordVisible),
                   ),
                 ),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return '비밀번호를 입력해주세요';
-                  if (v.length < 8) return '비밀번호는 8자 이상이어야 해요';
+                  if (v == null || v.isEmpty) return 'auth.password_required'.tr();
+                  if (v.length < 8) return 'auth.password_min'.tr();
                   return null;
                 },
               ),
               const SizedBox(height: 20),
 
-              // 비밀번호 확인
-              _label('비밀번호 확인'),
+              // ── 비밀번호 확인 ─────────────────────────────────────────────
+              _label('auth.password_confirm'.tr()),
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: !_confirmPasswordVisible,
                 decoration: InputDecoration(
-                  hintText: '비밀번호를 한 번 더 입력해주세요',
+                  hintText: 'auth.password_confirm_hint'.tr(),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _confirmPasswordVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _confirmPasswordVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                       color: AppTheme.textSecondary,
                     ),
-                    onPressed: () => setState(() => _confirmPasswordVisible = !_confirmPasswordVisible),
+                    onPressed: () => setState(
+                        () => _confirmPasswordVisible = !_confirmPasswordVisible),
                   ),
                 ),
                 validator: (v) {
-                  if (v == null || v.isEmpty) return '비밀번호 확인을 입력해주세요';
-                  if (v != _passwordController.text) return '비밀번호가 일치하지 않아요';
+                  if (v == null || v.isEmpty)
+                    return 'auth.password_confirm_required'.tr();
+                  if (v != _passwordController.text)
+                    return 'auth.password_mismatch'.tr();
                   return null;
                 },
               ),
               const SizedBox(height: 40),
 
-              // 인증하기 버튼
+              // ── 인증하기 버튼 ─────────────────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -268,10 +354,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: _isLoading ? null : _submit,
                   child: _isLoading
                       ? const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
                         )
-                      : const Text('인증하기'),
+                      : Text('auth.submit'.tr()),
                 ),
               ),
             ],

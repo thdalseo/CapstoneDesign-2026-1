@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "Home",
-    "connect": "Match",
     "matching": "Match",
     "chat": "Chat",
     "help": "Help",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "Set your grade, interests, and exchange purpose\nto find friends who match you.",
     "go_to_profile": "Set up profile",
     "no_matches": "No recommendations yet",
+    "no_matches_desc": "Complete your profile\nand we'll suggest friends for you!",
     "next_recommendations": "See next recommendations",
     "back_to_top": "Back to top"
   },
@@ -62,7 +62,25 @@
       "What do you usually do on weekends?",
       "What are your interests?",
       "How is your school life?"
-    ]
+    ],
+    "correct_title": "AI Sentence Correction",
+    "correct_already_good": "Your sentence looks great ✓",
+    "correct_original": "Original",
+    "correct_suggested": "Suggested",
+    "correct_send_original": "Send original",
+    "correct_send_corrected": "Send corrected",
+    "correct_error": "An error occurred during correction",
+    "session_title": "Language Exchange Session",
+    "session_sent": "Session request sent",
+    "session_received": "Session request received",
+    "session_teach": "Language to teach",
+    "session_learn": "Language to learn",
+    "session_duration": "Session duration",
+    "session_minutes": "{n} min session",
+    "session_start": "Start session",
+    "session_same_lang": "Teaching and learning language cannot be the same",
+    "session_running": "Session in progress",
+    "session_done": "Done"
   },
 
   "help": {
@@ -171,7 +189,44 @@
     "delete_account_title": "Delete Account",
     "delete_account_desc": "All data will be permanently deleted\nand cannot be recovered.",
     "password_hint": "Enter password",
-    "withdraw": "Delete Account"
+    "withdraw": "Delete Account",
+    "section_exchange": "Language Exchange",
+    "session_history": "Session History",
+    "session_days": "Session days this month",
+    "session_total_min": "Total time this month",
+    "session_no_record": "No records yet",
+    "session_no_record_desc": "Complete a language exchange session\nand it will be recorded here!",
+    "session_select_day": "Select a day to view records"
+  },
+
+  "auth": {
+    "signup_title": "Sign Up",
+    "name": "Name",
+    "name_hint": "Enter your name",
+    "name_required": "Please enter your name",
+    "college": "College",
+    "college_hint": "Select college",
+    "college_required": "Please select a college",
+    "dept": "Department",
+    "dept_hint": "Select department",
+    "dept_hint_first": "Select college first",
+    "dept_required": "Please select a department",
+    "country": "Country",
+    "country_hint": "Select country",
+    "country_required": "Please select a country",
+    "email": "School Email",
+    "email_hint": "Email ID",
+    "email_required": "Please enter your email",
+    "password": "Password",
+    "password_hint": "At least 8 characters",
+    "password_required": "Please enter a password",
+    "password_min": "Password must be at least 8 characters",
+    "password_confirm": "Confirm Password",
+    "password_confirm_hint": "Enter password again",
+    "password_confirm_required": "Please confirm your password",
+    "password_mismatch": "Passwords do not match",
+    "submit": "Verify",
+    "language": "UI Language"
   },
 
   "weight": {
