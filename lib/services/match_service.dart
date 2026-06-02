@@ -3,10 +3,11 @@ import '../models/match_user.dart';
 
 class MatchService {
   static const _matchingBase = '/api/matching';
+  static const _selectedBase = '/api/matching/selected';
   static const _usersBase = '/api/users';
 
   /// true이면 백엔드 없이 샘플 데이터 반환
-  static const bool _useMock = true;
+  static const bool _useMock = false;
 
   // ── 매칭 목록 ──────────────────────────────────────────────────────────────
 
@@ -18,6 +19,36 @@ class MatchService {
       params: {'email': email},
     );
     return list.cast<Map<String, dynamic>>().map(_toMatchUser).toList();
+  }
+
+  static Future<List<MatchUser>> fetchSelectedMatches(String email) async {
+    if (_useMock) return [];
+
+    final list = await ApiClient.getList(
+      _selectedBase,
+      params: {'email': email},
+    );
+    return list.cast<Map<String, dynamic>>().map(_toMatchUser).toList();
+  }
+
+  static Future<void> selectMatch(String email, MatchUser user) async {
+    if (_useMock) return;
+
+    await ApiClient.post(_selectedBase, {
+      'email': email,
+      'matched_user_id': int.parse(user.id),
+      'match_score': user.matchPercent,
+    });
+  }
+
+  static Future<void> unselectMatch(String email, MatchUser user) async {
+    if (_useMock) return;
+
+    await ApiClient.delete(
+      '$_selectedBase/${Uri.encodeComponent(user.id)}',
+      null,
+      {'email': email},
+    );
   }
 
   // ── 가중치 저장 ────────────────────────────────────────────────────────────
@@ -34,18 +65,15 @@ class MatchService {
   }) async {
     if (_useMock) return; // mock 모드에서는 로컬 저장만
 
-    await ApiClient.put(
-      '$_usersBase/${Uri.encodeComponent(email)}/weights',
-      {
-        'weight_purpose': weightPurpose,
-        'weight_interests': weightInterests,
-        'weight_language': weightLanguage,
-        'weight_personality': weightPersonality,
-        'weight_major': weightMajor,
-        'weight_year': weightYear,
-        'weight_nationality': weightNationality,
-      },
-    );
+    await ApiClient.put('$_usersBase/${Uri.encodeComponent(email)}/weights', {
+      'weight_purpose': weightPurpose,
+      'weight_interests': weightInterests,
+      'weight_language': weightLanguage,
+      'weight_personality': weightPersonality,
+      'weight_major': weightMajor,
+      'weight_year': weightYear,
+      'weight_nationality': weightNationality,
+    });
   }
 
   // ── 변환 ───────────────────────────────────────────────────────────────────
@@ -62,7 +90,8 @@ class MatchService {
       interests: lst('interests'),
       languages: lst('languages'),
       description: json['description'] as String? ?? '',
-      matchPercent: (json['match_score'] as num?)?.toInt() ?? 0,
+      matchPercent:
+          ((json['match_score'] ?? json['matchPercent']) as num?)?.toInt() ?? 0,
     );
   }
 

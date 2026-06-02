@@ -4,9 +4,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/api_client.dart';
+import '../../models/app_notification.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
 import '../../services/match_service.dart';
+import '../../services/notification_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../screens/mypage/mypage_screen.dart';
@@ -15,6 +17,7 @@ import '../../screens/helping/helping_screen.dart';
 import '../../screens/chatting/chatting_room_screen.dart';
 import '../../screens/chatting/chatting_screen.dart';
 import '../../screens/matching/matching_screen.dart';
+import '../../screens/notifications/notification_screen.dart';
 import '../../widgets/home/match_card.dart';
 import '../../widgets/home/home_bottom_nav.dart';
 import '../../widgets/home/my_profile_card.dart';
@@ -28,17 +31,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  int _currentPage = 0;   // PageView 내 현재 카드 인덱스
-  int _groupIndex = 0;    // 5명 묶음 그룹 인덱스
+  int _currentPage = 0; // PageView 내 현재 카드 인덱스
+  int _groupIndex = 0; // 5명 묶음 그룹 인덱스
   late final PageController _pageController;
   UserModel? _currentUser;
-  final List<MatchUser> _matchedUsers = [];   // 매칭 목록 (퍼즐 버튼)
+  final List<MatchUser> _matchedUsers = []; // 매칭 목록 (퍼즐 버튼)
   List<MatchUser> _matchList = [];
   bool _loadingMatches = false;
 
   // 채팅 관련 상태
-  int _unreadCount = 0;           // 읽지 않은 메시지 수 (하단 탭 뱃지)
-  Set<String> _chatUserIds = {};  // 채팅방이 있는 유저 ID 집합
+  int _unreadCount = 0; // 읽지 않은 메시지 수 (하단 탭 뱃지)
+  Set<String> _chatUserIds = {}; // 채팅방이 있는 유저 ID 집합
   /// 채팅 탭 활성화 펄스 — 값이 증가할 때마다 ChattingScreen이 즉시 갱신
   final _chatRefreshPulse = ValueNotifier<int>(0);
 
@@ -54,13 +57,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _matchList.isEmpty ? 0 : ((_matchList.length - 1) ~/ 5) + 1;
 
   // 이메일별로 분리해 다른 계정의 매칭 목록이 섞이지 않도록 함
-  String get _matchedKey =>
-      'matched_users_json_${_currentUser?.email ?? 'guest'}';
+  String _matchedKeyForEmail(String? email) {
+    final normalized = (email ?? '').trim().toLowerCase();
+    return 'matched_users_json_${normalized.isEmpty ? 'guest' : normalized}';
+  }
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: 0.68);
+    NotificationService.instance.load();
     _loadUser();
   }
 
@@ -71,12 +77,16 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _currentUser = localUser);
 
     // ── 2단계: 이메일 확보 즉시 매칭 목록 복원 ───────────────────────────────
-    await _loadMatchedUsers();
+    await _loadMatchedUsers(email: localUser?.email);
 
     // ── 3단계: 서버 동기화 (백엔드가 느리게 켜져도 로컬 데이터는 이미 복원됨) ──
     final user = await UserService.loadUser(syncFromServer: true);
     if (!mounted) return;
-    if (user != null) setState(() => _currentUser = user);
+    if (user != null) {
+      setState(() => _currentUser = user);
+      await _loadMatchedUsers(email: user.email);
+      await _loadSelectedMatchesFromServer(user.email);
+    }
 
     if (user != null && user.isProfileComplete) {
       await _loadMatches(user.email);
@@ -87,9 +97,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// SharedPreferences에서 매칭 유저 전체 데이터를 복원
-  Future<void> _loadMatchedUsers() async {
+  Future<void> _loadMatchedUsers({String? email}) async {
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_matchedKey);
+    final raw = prefs.getString(_matchedKeyForEmail(email));
     if (raw == null || raw.isEmpty) return;
     try {
       final list = jsonDecode(raw) as List<dynamic>;
@@ -105,13 +115,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// 매칭 유저 전체 데이터를 JSON으로 저장
-  Future<void> _saveMatchedUsers() async {
-    if (_currentUser?.email == null || _currentUser!.email.isEmpty) return;
+  Future<void> _saveMatchedUsers({String? email}) async {
+    final ownerEmail = email ?? _currentUser?.email ?? '';
+    if (ownerEmail.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      _matchedKey,
+      _matchedKeyForEmail(ownerEmail),
       jsonEncode(_matchedUsers.map((u) => u.toJson()).toList()),
     );
+  }
+
+  Future<void> _loadSelectedMatchesFromServer(String email) async {
+    try {
+      final selected = await MatchService.fetchSelectedMatches(email);
+      final withReasons = selected
+          .map((m) => m.copyWith(matchReasons: _computeReasons(m)))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _matchedUsers
+          ..clear()
+          ..addAll(withReasons);
+      });
+      await _saveMatchedUsers(email: email);
+    } catch (_) {
+      // 서버 조회 실패 시 이미 복원된 로컬 캐시를 유지한다.
+    }
   }
 
   Future<void> _loadMatches(String email) async {
@@ -122,7 +151,28 @@ class _HomeScreenState extends State<HomeScreen> {
       final withReasons = matches
           .map((m) => m.copyWith(matchReasons: _computeReasons(m)))
           .toList();
-      if (mounted) setState(() => _matchList = withReasons);
+      final reconciledMatchedUsers = _reconcileMatchedUsers(withReasons);
+      if (mounted) {
+        setState(() {
+          _matchList = withReasons;
+          if (reconciledMatchedUsers != null) {
+            _matchedUsers
+              ..clear()
+              ..addAll(reconciledMatchedUsers);
+          }
+        });
+        if (reconciledMatchedUsers != null) {
+          await _saveMatchedUsers(email: email);
+        }
+        if (withReasons.isNotEmpty) {
+          await NotificationService.instance.addOncePerDay(
+            key: 'new-matches:$email:${withReasons.length}',
+            type: AppNotificationType.match,
+            title: 'notifications.new_match_title'.tr(),
+            body: 'notifications.new_match_body'.tr(),
+          );
+        }
+      }
     } catch (_) {
       // 서버 연결 실패 시 빈 목록 유지
     } finally {
@@ -131,6 +181,35 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// 채팅방 목록을 가져와 unread 수 및 채팅 중인 유저 ID 집합을 업데이트
+  List<MatchUser>? _reconcileMatchedUsers(List<MatchUser> latestMatches) {
+    if (_matchedUsers.isEmpty) return null;
+
+    final latestById = {
+      for (final user in latestMatches)
+        if (user.id.isNotEmpty) user.id: user,
+    };
+    final next = <MatchUser>[];
+    var changed = false;
+
+    for (final saved in _matchedUsers) {
+      final latest = latestById[saved.id];
+      if (latest == null) {
+        next.add(saved);
+        continue;
+      }
+      next.add(latest);
+      if (latest.name != saved.name ||
+          latest.country != saved.country ||
+          latest.major != saved.major ||
+          latest.matchPercent != saved.matchPercent) {
+        changed = true;
+      }
+    }
+
+    if (next.length != _matchedUsers.length) changed = true;
+    return changed ? next : null;
+  }
+
   Future<void> _loadChatData() async {
     try {
       final user = await UserService.loadUser(syncFromServer: false);
@@ -165,8 +244,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (me == null) return [];
     final reasons = <String>[];
 
-    final common =
-        me.interests.where((i) => other.interests.contains(i)).toList();
+    final common = me.interests
+        .where((i) => other.interests.contains(i))
+        .toList();
     if (common.isNotEmpty) {
       reasons.add('${common.take(2).join(', ')} 관심사가 일치해요');
     }
@@ -199,6 +279,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _toggleMatched(MatchUser user) async {
+    final ownerEmail = _currentUser?.email ?? '';
+    if (ownerEmail.isEmpty) return;
+
+    final previous = List<MatchUser>.from(_matchedUsers);
+    final shouldAdd = !_matchedUsers.any((u) => u.id == user.id);
+
     setState(() {
       final idx = _matchedUsers.indexWhere((u) => u.id == user.id);
       if (idx == -1) {
@@ -207,18 +293,42 @@ class _HomeScreenState extends State<HomeScreen> {
         _matchedUsers.removeAt(idx);
       }
     });
-    await _saveMatchedUsers();
+
+    try {
+      if (shouldAdd) {
+        await MatchService.selectMatch(ownerEmail, user);
+      } else {
+        await MatchService.unselectMatch(ownerEmail, user);
+      }
+      await _saveMatchedUsers(email: ownerEmail);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _matchedUsers
+          ..clear()
+          ..addAll(previous);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('매칭 저장에 실패했습니다.')));
+    }
   }
 
   /// 채팅 시작
   void _startChat(MatchUser user, {String? initialMessage}) {
+    final userId = int.tryParse(user.id);
+    if (userId == null || userId <= 0) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invalid match user.')));
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChattingRoomScreen(
-          user: user,
-          initialMessage: initialMessage,
-        ),
+        builder: (_) =>
+            ChattingRoomScreen(user: user, initialMessage: initialMessage),
       ),
     ).then((_) {
       // 채팅방에서 돌아올 때 채팅 목록 즉시 갱신
@@ -253,8 +363,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
-                            Icon(Icons.wifi_off_rounded,
-                                size: 13, color: Colors.white),
+                            Icon(
+                              Icons.wifi_off_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               '서버에 연결할 수 없어요',
@@ -343,7 +456,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 foregroundColor: AppTheme.primary,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -351,7 +467,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: Text(
                 'home.go_to_profile'.tr(),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -402,8 +521,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'home.greeting'
-                        .tr(namedArgs: {'name': _currentUser?.name ?? ''}),
+                    'home.greeting'.tr(
+                      namedArgs: {'name': _currentUser?.name ?? ''},
+                    ),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -420,13 +540,63 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.notifications_outlined,
-                  color: AppTheme.textSecondary,
-                  size: 24,
-                ),
+              ValueListenableBuilder<List<AppNotification>>(
+                valueListenable: NotificationService.instance.notifications,
+                builder: (_, notifications, __) {
+                  final unread = notifications
+                      .where((notification) => !notification.isRead)
+                      .length;
+
+                  return IconButton(
+                    tooltip: 'notifications.title'.tr(),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: AppTheme.textSecondary,
+                          size: 24,
+                        ),
+                        if (unread > 0)
+                          Positioned(
+                            right: -3,
+                            top: -4,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
+                              decoration: const BoxDecoration(
+                                color: AppTheme.coral,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                unread > 9 ? '9+' : '$unread',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -510,7 +680,9 @@ class _HomeScreenState extends State<HomeScreen> {
               onPageChanged: (i) => setState(() => _currentPage = i),
               itemBuilder: (context, index) {
                 final user = _visibleMatches[index];
-                final alreadyMatched = _matchedUsers.any((u) => u.id == user.id);
+                final alreadyMatched = _matchedUsers.any(
+                  (u) => u.id == user.id,
+                );
                 return AnimatedBuilder(
                   animation: _pageController,
                   builder: (context, child) {
@@ -528,11 +700,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       vertical: 8,
                     ),
                     child: MatchCard(
-                        user: user,
-                        isMatched: alreadyMatched,
-                        isInChat: _chatUserIds.contains(user.id),
-                        onMatchTap: () => _toggleMatched(user),
-                      ),
+                      user: user,
+                      isMatched: alreadyMatched,
+                      isInChat: _chatUserIds.contains(user.id),
+                      onMatchTap: () => _toggleMatched(user),
+                    ),
                   ),
                 );
               },

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../../core/api_client.dart';
+import '../../models/app_notification.dart';
 import '../../models/chat_message.dart';
 import 'chat_service.dart';
 
@@ -25,17 +26,17 @@ class WebSocketChatService implements ChatService {
   WebSocketChatService({required String myUserId}) : _userId = myUserId;
 
   // ── 내부 상태 ──────────────────────────────────────────────────────────────
-  final _msgCtrl   = StreamController<ChatMessage>.broadcast();
+  final _msgCtrl = StreamController<ChatMessage>.broadcast();
   final _stateCtrl = StreamController<ChatConnectionState>.broadcast();
-  final _readCtrl  = StreamController<DateTime>.broadcast();
+  final _readCtrl = StreamController<DateTime>.broadcast();
   final _errorCtrl = StreamController<String>.broadcast();
 
   WebSocketChannel? _channel;
   StreamSubscription? _wsSub;
   int _localIdSeq = 1;
 
-  String? _currentRoomId;  // 재연결에 사용
-  bool _disposed = false;  // dispose 이후 재연결 방지
+  String? _currentRoomId; // 재연결에 사용
+  bool _disposed = false; // dispose 이후 재연결 방지
   int _retryCount = 0;
 
   // ── 공개 인터페이스 ────────────────────────────────────────────────────────
@@ -122,17 +123,17 @@ class WebSocketChatService implements ChatService {
   @override
   Future<void> send(String content) async {
     // 낙관적 업데이트: 서버 응답 대기 없이 즉시 UI에 반영
-    _msgCtrl.add(ChatMessage(
-      id: 'local_${_localIdSeq++}',
-      content: content,
-      timestamp: DateTime.now(),
-      isMe: true,
-    ));
-    _channel?.sink.add(jsonEncode({
-      'type': 'message',
-      'sender_id': _userId,
-      'content': content,
-    }));
+    _msgCtrl.add(
+      ChatMessage(
+        id: 'local_${_localIdSeq++}',
+        content: content,
+        timestamp: DateTime.now(),
+        isMe: true,
+      ),
+    );
+    _channel?.sink.add(
+      jsonEncode({'type': 'message', 'sender_id': _userId, 'content': content}),
+    );
   }
 
   @override
@@ -171,12 +172,18 @@ class WebSocketChatService implements ChatService {
       final type = data['type'] as String?;
 
       if (type == 'message') {
-        _msgCtrl.add(ChatMessage(
-          id: data['id'].toString(),
-          content: data['content'] as String,
-          timestamp: DateTime.parse(data['timestamp'] as String),
-          isMe: false,
-        ));
+        final notificationJson = data['notification'];
+        _msgCtrl.add(
+          ChatMessage(
+            id: data['id'].toString(),
+            content: data['content'] as String,
+            timestamp: DateTime.parse(data['timestamp'] as String),
+            isMe: false,
+            notification: notificationJson is Map<String, dynamic>
+                ? AppNotification.fromJson(notificationJson)
+                : null,
+          ),
+        );
       } else if (type == 'read') {
         // 내가 보낸 읽음 이벤트는 무시, 상대방 것만 처리
         final senderStr = data['user_id']?.toString();
