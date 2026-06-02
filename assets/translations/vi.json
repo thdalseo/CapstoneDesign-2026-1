@@ -19,6 +19,22 @@
     "login_required": "Vui lòng đăng nhập."
   },
 
+  "notifications": {
+    "title": "Thông báo",
+    "mark_all_read": "Đánh dấu đã đọc",
+    "empty_title": "Chưa có thông báo",
+    "empty_desc": "Tin nhắn mới, gợi ý kết nối\nvà thông báo hỗ trợ sẽ hiển thị ở đây.",
+    "new_chat_title": "Tin nhắn mới",
+    "new_chat_body": "{name}: {message}",
+    "new_match_title": "Gợi ý kết nối mới",
+    "new_match_body": "Bạn có gợi ý kết nối mới. Hãy kiểm tra nhé.",
+    "help_chat_title": "Chat yêu cầu hỗ trợ",
+    "help_chat_body": "Có người đã liên hệ về yêu cầu hỗ trợ của bạn.",
+    "just_now": "Vừa xong",
+    "minutes_ago": "{count} phút trước",
+    "hours_ago": "{count} giờ trước"
+  },
+
   "home": {
     "greeting": "Xin chào, {name}! 👋",
     "subtitle": "Giới thiệu những người bạn phù hợp với bạn.",

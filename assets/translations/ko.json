@@ -19,6 +19,22 @@
     "login_required": "로그인이 필요해요."
   },
 
+  "notifications": {
+    "title": "알림",
+    "mark_all_read": "모두 읽음",
+    "empty_title": "알림이 없어요",
+    "empty_desc": "새 채팅, 매칭 추천,\n도움 요청 알림이 여기에 표시돼요.",
+    "new_chat_title": "새 채팅 메시지",
+    "new_chat_body": "{name}: {message}",
+    "new_match_title": "새 매칭 추천",
+    "new_match_body": "새로운 매칭 상대가 있어요! 확인해보세요.",
+    "help_chat_title": "도움 요청 채팅",
+    "help_chat_body": "내 도움 요청에 누군가 연락했어요.",
+    "just_now": "방금 전",
+    "minutes_ago": "{count}분 전",
+    "hours_ago": "{count}시간 전"
+  },
+
   "home": {
     "greeting": "안녕하세요, {name}님! 👋",
     "subtitle": "당신과 잘 맞는 친구들을 소개할게요.",

@@ -1,7 +1,7 @@
 ﻿from sqlalchemy import inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.database import Base, engine
+from app.core.database import Base, engine, ensure_schema_compatibility
 from app.models import user  # noqa: F401 - register SQLAlchemy models on Base.metadata
 
 EXPECTED_TABLES = [
@@ -13,8 +13,11 @@ EXPECTED_TABLES = [
     "matches",
     "chat_rooms",
     "chat_messages",
+    "chat_room_reads",
+    "notifications",
     "help_posts",
     "help_helpers",
+    "language_exchange_posts",
     "email_verifications",
 ]
 
@@ -26,6 +29,7 @@ def main():
         print("[OK] Database connection succeeded.")
 
         Base.metadata.create_all(bind=engine)
+        ensure_schema_compatibility()
         print("[OK] SQLAlchemy tables were created or already existed.")
 
         inspector = inspect(engine)

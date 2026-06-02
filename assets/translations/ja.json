@@ -19,6 +19,22 @@
     "login_required": "ログインが必要です。"
   },
 
+  "notifications": {
+    "title": "通知",
+    "mark_all_read": "すべて既読",
+    "empty_title": "通知はありません",
+    "empty_desc": "新しいチャット、マッチング推薦、\nヘルプ通知がここに表示されます。",
+    "new_chat_title": "新しいチャットメッセージ",
+    "new_chat_body": "{name}: {message}",
+    "new_match_title": "新しいマッチング推薦",
+    "new_match_body": "新しいマッチング相手がいます。確認してみましょう。",
+    "help_chat_title": "ヘルプ依頼チャット",
+    "help_chat_body": "あなたのヘルプ依頼に誰かが連絡しました。",
+    "just_now": "たった今",
+    "minutes_ago": "{count}分前",
+    "hours_ago": "{count}時間前"
+  },
+
   "home": {
     "greeting": "こんにちは、{name}さん！ 👋",
     "subtitle": "あなたに合うお友達を紹介します。",

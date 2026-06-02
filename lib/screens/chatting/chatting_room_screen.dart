@@ -4,10 +4,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../../models/chat_message.dart';
+import '../../models/app_notification.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
 import '../../services/chat/chat_service.dart';
 import '../../services/chat/chat_service_factory.dart';
+import '../../services/notification_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
 import '../../constants/profile_labels.dart';
@@ -36,7 +38,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  ChatService? _service;        // 비동기 초기화 전까지 null
+  ChatService? _service; // 비동기 초기화 전까지 null
   final List<ChatMessage> _messages = [];
   StreamSubscription<ChatMessage>? _messageSub;
   StreamSubscription<DateTime>? _readSub;
@@ -44,8 +46,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   ChatConnectionState _connState = ChatConnectionState.disconnected;
   bool _loadingHistory = true;
   bool _showSuggestions = true;
-  int? _resolvedRoomId;         // 서버에서 확정된 room_id
-  DateTime? _otherLastReadAt;   // 상대방이 마지막으로 읽은 시각
+  int? _resolvedRoomId; // 서버에서 확정된 room_id
+  DateTime? _otherLastReadAt; // 상대방이 마지막으로 읽은 시각
 
   // AI 아이스브레이킹 제안
   List<String> _suggestions = const [];
@@ -89,9 +91,15 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       // ── 세션 명령 메시지 처리 (화면에 표시하지 않음) ──
       if (msg.content.startsWith('__SESSION_START__|')) {
         final parts = msg.content.split('|');
-        final teach = parts.length > 1 ? parts[1].split(':').skip(1).join(':') : '';
-        final learn = parts.length > 2 ? parts[2].split(':').skip(1).join(':') : '';
-        final minutes = parts.length > 3 ? int.tryParse(parts[3].split(':').last) ?? 30 : 30;
+        final teach = parts.length > 1
+            ? parts[1].split(':').skip(1).join(':')
+            : '';
+        final learn = parts.length > 2
+            ? parts[2].split(':').skip(1).join(':')
+            : '';
+        final minutes = parts.length > 3
+            ? int.tryParse(parts[3].split(':').last) ?? 30
+            : 30;
         if (!_sessionActive) _startSessionTimer(teach, learn, minutes);
         return;
       }
@@ -109,6 +117,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       }
       setState(() => _messages.add(msg));
       _scrollToBottom();
+      if (!msg.isMe) {
+        _notifyIncomingMessage(msg);
+      }
     });
     _readSub = _service!.readEventStream.listen((readAt) {
       if (mounted) setState(() => _otherLastReadAt = readAt);
@@ -154,15 +165,21 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     if (!mounted) return;
 
     // 세션 명령 메시지(__SESSION_START__, __SESSION_STOP__)는 화면에 표시하지 않음
-    final visibleHistory = history.where((m) =>
-        !m.content.startsWith('__SESSION_START__|') &&
-        m.content != '__SESSION_STOP__').toList();
+    final visibleHistory = history
+        .where(
+          (m) =>
+              !m.content.startsWith('__SESSION_START__|') &&
+              m.content != '__SESSION_STOP__',
+        )
+        .toList();
 
     // 마지막 세션 카드 이후 __SESSION_STOP__이 있으면 완료 상태 복원
     final lastSessionIdx = history.lastIndexWhere(
-        (m) => m.content.startsWith('__LANG_SESSION__|'));
+      (m) => m.content.startsWith('__LANG_SESSION__|'),
+    );
     final lastStopIdx = history.lastIndexWhere(
-        (m) => m.content == '__SESSION_STOP__');
+      (m) => m.content == '__SESSION_STOP__',
+    );
     final restoredDone = lastSessionIdx != -1 && lastStopIdx > lastSessionIdx;
 
     setState(() {
@@ -190,7 +207,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       return widget.roomId!.toString();
     }
     try {
-      final me = await UserService.loadUser(syncFromServer: false);
+      final me = await UserService.loadUser(syncFromServer: true);
       final myId = int.tryParse(me?.id ?? '') ?? 0;
       final otherId = int.tryParse(widget.user.id) ?? 0;
 
@@ -238,6 +255,38 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     setState(() => _showSuggestions = false);
     _service!.send(text);
     _scrollToBottom();
+  }
+
+  Future<void> _notifyIncomingMessage(ChatMessage message) async {
+    final serverNotification = message.notification;
+    final body =
+        serverNotification?.body ??
+        'notifications.new_chat_body'.tr(
+          namedArgs: {'name': widget.user.name, 'message': message.content},
+        );
+
+    if (serverNotification != null) {
+      await NotificationService.instance.upsert(serverNotification);
+    } else {
+      await NotificationService.instance.add(
+        type: AppNotificationType.chat,
+        title: 'notifications.new_chat_title'.tr(),
+        body: body,
+        sourceType: 'chat_room',
+        sourceId: _resolvedRoomId?.toString(),
+      );
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(body),
+        backgroundColor: AppTheme.primary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   Future<void> _refreshSuggestions() async {
@@ -321,8 +370,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             // 헤더
             Row(
               children: [
-                const Icon(Icons.auto_awesome_rounded,
-                    size: 16, color: AppTheme.primary),
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 16,
+                  color: AppTheme.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'chat.correct_title'.tr(),
@@ -344,12 +396,17 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.mint.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.mint.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: AppTheme.mint.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_outline_rounded,
-                        size: 18, color: AppTheme.mint),
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 18,
+                      color: AppTheme.mint,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -376,13 +433,18 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: Text('chat.correct_send_original'.tr(),
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    'chat.correct_send_original'.tr(),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ] else ...[
@@ -427,12 +489,17 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         foregroundColor: AppTheme.textSecondary,
                         side: BorderSide(color: AppTheme.border),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
-                      child: Text('chat.correct_send_original'.tr(),
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w500)),
+                      child: Text(
+                        'chat.correct_send_original'.tr(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -448,13 +515,18 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
-                      child: Text('chat.correct_send_corrected'.tr(),
-                          style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600)),
+                      child: Text(
+                        'chat.correct_send_corrected'.tr(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -496,8 +568,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           const SizedBox(height: 6),
           Text(
             'chat.suggestion_desc'.tr(),
-            style: const TextStyle(
-                fontSize: 12, color: AppTheme.textSecondary),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -538,7 +609,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 else
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 6, vertical: 2),
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(999),
@@ -546,8 +619,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome_rounded,
-                            size: 9, color: AppTheme.primary),
+                        Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 9,
+                          color: AppTheme.primary,
+                        ),
                         SizedBox(width: 3),
                         Text(
                           'AI',
@@ -597,17 +673,20 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: List.generate(3, (i) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Container(
-                    width: 120 + i * 20.0,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(999),
+                children: List.generate(
+                  3,
+                  (i) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Container(
+                      width: 120 + i * 20.0,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(999),
+                      ),
                     ),
                   ),
-                )),
+                ),
               ),
             )
           else
@@ -621,12 +700,15 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                       onTap: () => _sendSuggestion(text),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 8),
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F4FF),
                           borderRadius: BorderRadius.circular(999),
                           border: Border.all(
-                              color: AppTheme.primary.withValues(alpha: 0.25)),
+                            color: AppTheme.primary.withValues(alpha: 0.25),
+                          ),
                         ),
                         child: Text(
                           text,
@@ -676,13 +758,17 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         'locale': locale,
       });
 
-      final questions = (res['questions'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? [];
+      final questions =
+          (res['questions'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
 
       if (mounted) {
         setState(() {
-          _suggestions = questions.isNotEmpty ? questions : _fallbackSuggestions();
+          _suggestions = questions.isNotEmpty
+              ? questions
+              : _fallbackSuggestions();
           _loadingSuggestions = false;
         });
       }
@@ -718,10 +804,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   /// 채팅방 읽음 처리
   Future<void> _markAsRead(String roomId, int myId) async {
     try {
-      await ApiClient.post(
-        '/chat/rooms/$roomId/read',
-        {'user_id': myId},
-      );
+      await ApiClient.post('/chat/rooms/$roomId/read', {'user_id': myId});
     } catch (_) {}
   }
 
@@ -736,7 +819,10 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       _sessionDone = false;
     });
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted) { t.cancel(); return; }
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
       setState(() => _sessionRemainingSeconds--);
       if (_sessionRemainingSeconds <= 0) {
         t.cancel();
@@ -794,8 +880,10 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('🎉 세션 완료!',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+        title: const Text(
+          '🎉 세션 완료!',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        ),
         content: Text(
           '$_sessionTeach ⇄ $_sessionLearn 세션이 끝났어요!\n수고하셨습니다.',
           style: const TextStyle(fontSize: 14, height: 1.5),
@@ -807,7 +895,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
               backgroundColor: AppTheme.sessionAccent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
               elevation: 0,
             ),
             child: const Text('확인'),
@@ -828,8 +917,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          const Icon(Icons.swap_horiz_rounded,
-              size: 16, color: AppTheme.sessionAccent),
+          const Icon(
+            Icons.swap_horiz_rounded,
+            size: 16,
+            color: AppTheme.sessionAccent,
+          ),
           const SizedBox(width: 8),
           Text(
             '$_sessionTeach ⇄ $_sessionLearn',
@@ -850,8 +942,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.timer_outlined,
-                    size: 13, color: AppTheme.sessionAccent),
+                const Icon(
+                  Icons.timer_outlined,
+                  size: 13,
+                  color: AppTheme.sessionAccent,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '$min:$sec',
@@ -874,16 +969,22 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
               _stopSessionTimer(); // 내부에서 저장
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Row(children: [
-                    const Icon(Icons.check_circle_outline_rounded,
-                        color: Colors.white, size: 16),
-                    const SizedBox(width: 8),
-                    Text('$teach ⇄ $learn 세션 완료!'),
-                  ]),
+                  content: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text('$teach ⇄ $learn 세션 완료!'),
+                    ],
+                  ),
                   backgroundColor: AppTheme.sessionAccent,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               );
             },
@@ -911,8 +1012,16 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   /// 언어교환 세션 시작 바텀시트
   void _showSessionSheet() {
     const languages = [
-      '한국어', '영어', '중국어', '일본어', '베트남어',
-      '프랑스어', '독일어', '스페인어', '러시아어', '아랍어',
+      '한국어',
+      '영어',
+      '중국어',
+      '일본어',
+      '베트남어',
+      '프랑스어',
+      '독일어',
+      '스페인어',
+      '러시아어',
+      '아랍어',
     ];
     const durations = [15, 30, 45, 60];
 
@@ -939,8 +1048,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 context: context,
                 backgroundColor: Colors.white,
                 shape: const RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 builder: (pickerCtx) {
                   return Column(
@@ -981,7 +1089,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                               },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 24, vertical: 14),
+                                  horizontal: 24,
+                                  vertical: 14,
+                                ),
                                 child: Row(
                                   children: [
                                     Text(
@@ -998,8 +1108,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                                     ),
                                     const Spacer(),
                                     if (isSel)
-                                      const Icon(Icons.check_rounded,
-                                          color: AppTheme.sessionAccent, size: 18),
+                                      const Icon(
+                                        Icons.check_rounded,
+                                        color: AppTheme.sessionAccent,
+                                        size: 18,
+                                      ),
                                   ],
                                 ),
                               ),
@@ -1008,8 +1121,8 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         ),
                       ),
                       SizedBox(
-                          height:
-                              MediaQuery.of(pickerCtx).padding.bottom + 8),
+                        height: MediaQuery.of(pickerCtx).padding.bottom + 8,
+                      ),
                     ],
                   );
                 },
@@ -1019,7 +1132,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             // ── 메인 시트 ─────────────────────────────────
             return Padding(
               padding: EdgeInsets.fromLTRB(
-                  24, 16, 24, MediaQuery.of(ctx).viewInsets.bottom + 32),
+                24,
+                16,
+                24,
+                MediaQuery.of(ctx).viewInsets.bottom + 32,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1039,8 +1156,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                   // 타이틀
                   Row(
                     children: [
-                      const Icon(Icons.swap_horiz_rounded,
-                          size: 20, color: AppTheme.sessionAccent),
+                      const Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 20,
+                        color: AppTheme.sessionAccent,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'chat.session_title'.tr(),
@@ -1065,14 +1185,19 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                             onTap: () =>
                                 pickLang(teachLang, (l) => teachLang = l),
                             child: Container(
-                              padding:
-                                  const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                14,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    AppTheme.session.withValues(alpha: 0.05),
+                                color: AppTheme.session.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: AppTheme.session.withValues(alpha: 0.35),
+                                  color: AppTheme.session.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   width: 1.5,
                                 ),
                               ),
@@ -1100,8 +1225,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                                           ),
                                         ),
                                       ),
-                                      const Icon(Icons.expand_more_rounded,
-                                          size: 18, color: AppTheme.sessionAccent),
+                                      const Icon(
+                                        Icons.expand_more_rounded,
+                                        size: 18,
+                                        color: AppTheme.sessionAccent,
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -1112,8 +1240,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
 
                         // ⇄ 화살표
                         Padding(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Center(
                             child: Container(
                               width: 36,
@@ -1122,8 +1249,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                                 color: AppTheme.session.withValues(alpha: 0.08),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.swap_horiz_rounded,
-                                  size: 20, color: AppTheme.sessionAccent),
+                              child: const Icon(
+                                Icons.swap_horiz_rounded,
+                                size: 20,
+                                color: AppTheme.sessionAccent,
+                              ),
                             ),
                           ),
                         ),
@@ -1134,14 +1264,19 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                             onTap: () =>
                                 pickLang(learnLang, (l) => learnLang = l),
                             child: Container(
-                              padding:
-                                  const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                14,
+                              ),
                               decoration: BoxDecoration(
-                                color:
-                                    AppTheme.session.withValues(alpha: 0.05),
+                                color: AppTheme.session.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: AppTheme.session.withValues(alpha: 0.35),
+                                  color: AppTheme.session.withValues(
+                                    alpha: 0.35,
+                                  ),
                                   width: 1.5,
                                 ),
                               ),
@@ -1169,8 +1304,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                                           ),
                                         ),
                                       ),
-                                      const Icon(Icons.expand_more_rounded,
-                                          size: 18, color: AppTheme.sessionAccent),
+                                      const Icon(
+                                        Icons.expand_more_rounded,
+                                        size: 18,
+                                        color: AppTheme.sessionAccent,
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -1202,13 +1340,16 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 150),
                             margin: const EdgeInsets.only(right: 8),
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 10),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
-                              color: sel ? AppTheme.sessionAccent : Colors.transparent,
+                              color: sel
+                                  ? AppTheme.sessionAccent
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: sel ? AppTheme.sessionAccent : AppTheme.border,
+                                color: sel
+                                    ? AppTheme.sessionAccent
+                                    : AppTheme.border,
                               ),
                             ),
                             child: Text(
@@ -1233,12 +1374,15 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.session.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppTheme.session.withValues(alpha: 0.15)),
+                        color: AppTheme.session.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1253,8 +1397,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         ),
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Icon(Icons.swap_horiz_rounded,
-                              size: 16, color: AppTheme.sessionAccent),
+                          child: Icon(
+                            Icons.swap_horiz_rounded,
+                            size: 16,
+                            color: AppTheme.sessionAccent,
+                          ),
                         ),
                         Text(
                           langLabel(learnLang),
@@ -1265,16 +1412,18 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Icon(Icons.timer_outlined,
-                            size: 13,
-                            color: AppTheme.textSecondary
-                                .withValues(alpha: 0.7)),
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 13,
+                          color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '$minutes분',
                           style: const TextStyle(
-                              fontSize: 13,
-                              color: AppTheme.textSecondary),
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -1289,8 +1438,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         if (teachLang == learnLang) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content:
-                                  Text('chat.session_same_lang'.tr()),
+                              content: Text('chat.session_same_lang'.tr()),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: Colors.red.shade400,
                             ),
@@ -1308,15 +1456,17 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         backgroundColor: AppTheme.sessionAccent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         elevation: 0,
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       child: Text(
                         'chat.session_start'.tr(),
                         style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -1343,10 +1493,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              '나가기',
-              style: TextStyle(color: Colors.red.shade400),
-            ),
+            child: Text('나가기', style: TextStyle(color: Colors.red.shade400)),
           ),
         ],
       ),
@@ -1360,11 +1507,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
       final roomId = _resolvedRoomId ?? widget.roomId;
       final myId = int.tryParse(_service?.myUserId ?? '') ?? 0;
       if (roomId != null && myId > 0) {
-        await ApiClient.delete(
-          '/chat/rooms/$roomId',
-          null,
-          {'user_id': '$myId'},
-        );
+        await ApiClient.delete('/chat/rooms/$roomId', null, {
+          'user_id': '$myId',
+        });
       }
     } catch (_) {}
     if (mounted) Navigator.pop(context);
@@ -1429,8 +1574,7 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 ),
                 if (user.countryFlag.isNotEmpty) ...[
                   const SizedBox(width: 6),
-                  Text(user.countryFlag,
-                      style: const TextStyle(fontSize: 18)),
+                  Text(user.countryFlag, style: const TextStyle(fontSize: 18)),
                 ],
               ],
             ),
@@ -1464,7 +1608,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 children: user.interests.map((tag) {
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF0F4F8),
                       borderRadius: BorderRadius.circular(999),
@@ -1490,7 +1636,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 children: user.languages.map((lang) {
                   return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(999),
@@ -1498,8 +1646,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.translate_rounded,
-                            size: 11, color: AppTheme.primary),
+                        const Icon(
+                          Icons.translate_rounded,
+                          size: 11,
+                          color: AppTheme.primary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           lang,
@@ -1570,7 +1721,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                 height: 36,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: avatarColorFor(widget.user.name).withValues(alpha: 0.15),
+                  color: avatarColorFor(
+                    widget.user.name,
+                  ).withValues(alpha: 0.15),
                 ),
                 child: Center(
                   child: Text(
@@ -1614,10 +1767,14 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded,
-                color: AppTheme.textPrimary, size: 22),
+            icon: const Icon(
+              Icons.more_vert_rounded,
+              color: AppTheme.textPrimary,
+              size: 22,
+            ),
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+              borderRadius: BorderRadius.circular(14),
+            ),
             color: Colors.white,
             elevation: 6,
             shadowColor: Colors.black.withValues(alpha: 0.10),
@@ -1625,7 +1782,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
               PopupMenuItem(
                 value: 'session',
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1636,8 +1795,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         color: AppTheme.session.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      child: const Icon(Icons.swap_horiz_rounded,
-                          size: 17, color: AppTheme.sessionAccent),
+                      child: const Icon(
+                        Icons.swap_horiz_rounded,
+                        size: 17,
+                        color: AppTheme.sessionAccent,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -1655,7 +1817,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
               PopupMenuItem(
                 value: 'leave',
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 6),
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1666,8 +1830,11 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                         color: Colors.red.shade50,
                         borderRadius: BorderRadius.circular(9),
                       ),
-                      child: Icon(Icons.exit_to_app_rounded,
-                          size: 17, color: Colors.red.shade400),
+                      child: Icon(
+                        Icons.exit_to_app_rounded,
+                        size: 17,
+                        color: Colors.red.shade400,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -1706,34 +1873,38 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                     ),
                   )
                 : _messages.isEmpty
-                    ? _buildEmptyWithSuggestions()
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, i) {
-                          final msg = _messages[i];
-                          final isRead = msg.isMe &&
-                              _otherLastReadAt != null &&
-                              !msg.timestamp.isAfter(_otherLastReadAt!);
-                          return ChatBubble(
-                            message: msg,
-                            isRead: isRead,
-                            senderName: msg.isMe ? '' : widget.user.name,
-                            isSessionActive: _sessionActive,
-                            isSessionDone: _sessionDone,
-                            onSessionStart: _sessionActive
-                                ? null // 이미 세션 중이면 비활성화
-                                : (teach, learn, min) {
-                                    _startSessionTimer(teach, learn, min);
-                                    // 상대방에게 세션 시작 알림 (상대도 자동으로 타이머 시작)
-                                    _service?.send(
-                                        '__SESSION_START__|teach:$teach|learn:$learn|minutes:$min');
-                                  },
-                          );
-                        },
-                      ),
+                ? _buildEmptyWithSuggestions()
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, i) {
+                      final msg = _messages[i];
+                      final isRead =
+                          msg.isMe &&
+                          _otherLastReadAt != null &&
+                          !msg.timestamp.isAfter(_otherLastReadAt!);
+                      return ChatBubble(
+                        message: msg,
+                        isRead: isRead,
+                        senderName: msg.isMe ? '' : widget.user.name,
+                        isSessionActive: _sessionActive,
+                        isSessionDone: _sessionDone,
+                        onSessionStart: _sessionActive
+                            ? null // 이미 세션 중이면 비활성화
+                            : (teach, learn, min) {
+                                _startSessionTimer(teach, learn, min);
+                                // 상대방에게 세션 시작 알림 (상대도 자동으로 타이머 시작)
+                                _service?.send(
+                                  '__SESSION_START__|teach:$teach|learn:$learn|minutes:$min',
+                                );
+                              },
+                      );
+                    },
+                  ),
           ),
           if (!_loadingHistory && _showSuggestions) _buildSuggestionChips(),
           // 교정 로딩 중 표시
@@ -1816,17 +1987,18 @@ class _ConnectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (key, color) = switch (state) {
-      ChatConnectionState.connecting =>
-        ('chat.connecting', AppTheme.textSecondary),
+      ChatConnectionState.connecting => (
+        'chat.connecting',
+        AppTheme.textSecondary,
+      ),
       ChatConnectionState.connected => ('chat.connected', AppTheme.mint),
       ChatConnectionState.error => ('chat.conn_error', AppTheme.coral),
-      ChatConnectionState.disconnected =>
-        ('chat.offline', AppTheme.textSecondary),
+      ChatConnectionState.disconnected => (
+        'chat.offline',
+        AppTheme.textSecondary,
+      ),
     };
 
-    return Text(
-      key.tr(),
-      style: TextStyle(fontSize: 11, color: color),
-    );
+    return Text(key.tr(), style: TextStyle(fontSize: 11, color: color));
   }
 }

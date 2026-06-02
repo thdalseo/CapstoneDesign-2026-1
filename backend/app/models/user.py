@@ -201,6 +201,25 @@ class ChatRoomRead(Base):
     )
 
 
+class AppNotification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    type = Column(String(30), nullable=False)
+    title = Column(String(100), nullable=False)
+    body = Column(Text, nullable=False)
+    source_type = Column(String(50), nullable=True)
+    source_id = Column(String(50), nullable=True)
+    dedupe_key = Column(String(120), nullable=True, index=True)
+    is_read = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
 class HelpPost(Base):
     __tablename__ = "help_posts"
 

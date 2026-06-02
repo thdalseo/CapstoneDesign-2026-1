@@ -19,6 +19,22 @@
     "login_required": "Login required."
   },
 
+  "notifications": {
+    "title": "Notifications",
+    "mark_all_read": "Mark all read",
+    "empty_title": "No notifications",
+    "empty_desc": "New chats, match recommendations,\nand help alerts will appear here.",
+    "new_chat_title": "New chat message",
+    "new_chat_body": "{name}: {message}",
+    "new_match_title": "New match recommendation",
+    "new_match_body": "You have a new match recommendation. Check it out!",
+    "help_chat_title": "Help request chat",
+    "help_chat_body": "Someone contacted you about your help request.",
+    "just_now": "Just now",
+    "minutes_ago": "{count}m ago",
+    "hours_ago": "{count}h ago"
+  },
+
   "home": {
     "greeting": "Hello, {name}! 👋",
     "subtitle": "Here are friends who match well with you.",

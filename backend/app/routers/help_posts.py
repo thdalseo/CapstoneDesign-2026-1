@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.profanity_filter import contains_profanity
 from app.models.user import HelpHelper, HelpPost, User
+from app.notification_utils import create_notification
 
 router = APIRouter(prefix="/api/help-posts", tags=["help-posts"])
 
@@ -161,6 +162,17 @@ def update_help_post(
 def complete_help_post(post_id: int, db: Session = Depends(get_db)):
     post = _get_post(db, post_id)
     post.is_completed = True
+    for helper in post.helpers:
+        create_notification(
+            db,
+            user_id=helper.helper_id,
+            type="help",
+            title="도움 요청 완료",
+            body=f"'{post.title}' 도움 요청이 완료 처리되었습니다.",
+            source_type="help_post",
+            source_id=str(post.id),
+            dedupe_key=f"help_complete:{post.id}:{helper.helper_id}",
+        )
     db.commit()
     db.refresh(post)
     return {"message": "Help post completed.", "post": _post_dict(post)}
@@ -183,6 +195,16 @@ def apply_help(post_id: int, req: HelpRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=409, detail="Already applied to help.")
 
     db.add(HelpHelper(post_id=post.id, helper_id=helper.id))
+    create_notification(
+        db,
+        user_id=post.author_id,
+        type="help",
+        title="새 도움 신청",
+        body=f"{helper.name}님이 '{post.title}' 도움을 신청했습니다.",
+        source_type="help_post",
+        source_id=str(post.id),
+        dedupe_key=f"help_apply:{post.id}:{helper.id}",
+    )
     db.commit()
     db.refresh(post)
     return {"message": "Help application created.", "post": _post_dict(post)}

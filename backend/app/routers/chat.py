@@ -14,6 +14,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.profanity_filter import contains_profanity
 from app.models.user import ChatMessage, ChatRoom, ChatRoomRead, User
+from app.notification_utils import create_notification, notification_dict
 
 router = APIRouter(tags=["chat"])
 
@@ -744,20 +745,51 @@ async def websocket_chat(
             db.commit()
             db.refresh(msg)
 
+            notification_payload = None
+            try:
+                room = db.query(ChatRoom).filter(ChatRoom.id == room_id).first()
+                sender = (
+                    db.query(User)
+                    .filter(User.id == sender_id_int)
+                    .first()
+                )
+                if room and sender:
+                    receiver_id = (
+                        room.user_id_b
+                        if room.user_id_a == sender.id
+                        else room.user_id_a
+                    )
+                    notification = create_notification(
+                        db,
+                        user_id=receiver_id,
+                        type="chat",
+                        title="새 채팅 메시지",
+                        body=f"{sender.name}: {content}",
+                        source_type="chat_room",
+                        source_id=str(room_id),
+                        dedupe_key=f"chat:{msg.id}:{receiver_id}",
+                    )
+                    db.commit()
+                    db.refresh(notification)
+                    notification_payload = notification_dict(notification)
+            except Exception as e:
+                db.rollback()
+                print(f"[notification] 채팅 알림 생성 실패: {e}")
+
             # 보낸 사람을 제외한 나머지에게 브로드캐스트
             # (보낸 사람은 낙관적 업데이트로 이미 UI에 표시됨)
-            await manager.broadcast(
-                room_id,
-                {
-                    "type": "message",
-                    "id": msg.id,
-                    "sender_id": msg.sender_id,
-                    "content": msg.content,
-                    "timestamp": msg.created_at.isoformat(),
-                    "is_system": False,
-                },
-                exclude=ws,
-            )
+            payload = {
+                "type": "message",
+                "id": msg.id,
+                "sender_id": msg.sender_id,
+                "content": msg.content,
+                "timestamp": msg.created_at.isoformat(),
+                "is_system": False,
+            }
+            if notification_payload:
+                payload["notification"] = notification_payload
+
+            await manager.broadcast(room_id, payload, exclude=ws)
 
     except WebSocketDisconnect:
         pass

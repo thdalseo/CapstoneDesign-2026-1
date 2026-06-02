@@ -19,6 +19,22 @@
     "login_required": "需要登录。"
   },
 
+  "notifications": {
+    "title": "通知",
+    "mark_all_read": "全部已读",
+    "empty_title": "暂无通知",
+    "empty_desc": "新的聊天、匹配推荐和帮助通知\n会显示在这里。",
+    "new_chat_title": "新的聊天消息",
+    "new_chat_body": "{name}: {message}",
+    "new_match_title": "新的匹配推荐",
+    "new_match_body": "有新的匹配对象，快去看看吧。",
+    "help_chat_title": "帮助请求聊天",
+    "help_chat_body": "有人联系了你的帮助请求。",
+    "just_now": "刚刚",
+    "minutes_ago": "{count}分钟前",
+    "hours_ago": "{count}小时前"
+  },
+
   "home": {
     "greeting": "您好，{name}！ 👋",
     "subtitle": "为您介绍与您相匹配的朋友。",
