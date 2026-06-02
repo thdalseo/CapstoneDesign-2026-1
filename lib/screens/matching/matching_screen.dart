@@ -8,12 +8,15 @@ class MatchingScreen extends StatelessWidget {
   final List<MatchUser> users;
   final void Function(MatchUser) onToggle;
   final void Function(MatchUser) onStartChat;
+  /// 이미 채팅방이 열린 유저 ID 집합 (채팅 중 표시용)
+  final Set<String> chatUserIds;
 
   const MatchingScreen({
     super.key,
     required this.users,
     required this.onToggle,
     required this.onStartChat,
+    this.chatUserIds = const {},
   });
 
   @override
@@ -74,10 +77,11 @@ class MatchingScreen extends StatelessWidget {
           color: AppTheme.border,
         ),
         itemBuilder: (context, i) => MatchedUserTile(
-              user: users[i],
-              onToggle: () => onToggle(users[i]),
-              onStartChat: () => onStartChat(users[i]),
-            ),
+          user: users[i],
+          onToggle: () => onToggle(users[i]),
+          onStartChat: () => onStartChat(users[i]),
+          isInChat: chatUserIds.contains(users[i].id),
+        ),
       ),
     );
   }

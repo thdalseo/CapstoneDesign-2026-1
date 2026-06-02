@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import '../../models/match_user.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/avatar_color.dart';
 
 class ChatRoomTile extends StatelessWidget {
   final MatchUser user;
@@ -19,9 +20,20 @@ class ChatRoomTile extends StatelessWidget {
     this.lastMessageTime,
   });
 
+  /// 특수 메시지 포맷 → 읽기 쉬운 미리보기로 변환
+  String _formatPreview(BuildContext context) {
+    final msg = lastMessage;
+    if (msg == null || msg.isEmpty) return 'chat.room_start_hint'.tr();
+    if (msg.startsWith('__LANG_SESSION__|')) return '🌐 언어교환 세션';
+    if (msg.startsWith('🤝 함께해요!')) return '🤝 도움 요청에 응했어요';
+    return msg;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final preview = lastMessage ?? 'chat.room_start_hint'.tr();
+    final preview = _formatPreview(context);
+    final avatarColor = avatarColorFor(user.name);
+    final hasUnread = unreadCount > 0;
 
     return GestureDetector(
       onTap: onTap,
@@ -30,18 +42,23 @@ class ChatRoomTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         child: Row(
           children: [
-            // 아바타
+            // 아바타 (이름 기반 색상 + 첫 글자)
             Container(
               width: 50,
               height: 50,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFFE8F0FE),
+                color: avatarColor.withValues(alpha: 0.15),
               ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppTheme.primary,
-                size: 26,
+              child: Center(
+                child: Text(
+                  avatarInitial(user.name),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: avatarColor,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -55,9 +72,11 @@ class ChatRoomTile extends StatelessWidget {
                     children: [
                       Text(
                         user.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: hasUnread
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           color: AppTheme.textPrimary,
                         ),
                       ),
@@ -75,9 +94,13 @@ class ChatRoomTile extends StatelessWidget {
                     preview,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppTheme.textSecondary,
+                      color: hasUnread
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
+                      fontWeight:
+                          hasUnread ? FontWeight.w500 : FontWeight.normal,
                     ),
                   ),
                 ],
@@ -91,12 +114,16 @@ class ChatRoomTile extends StatelessWidget {
               children: [
                 Text(
                   lastMessageTime ?? '',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: AppTheme.textSecondary,
+                    color: hasUnread
+                        ? AppTheme.primary
+                        : AppTheme.textSecondary,
+                    fontWeight:
+                        hasUnread ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
-                if (unreadCount > 0) ...[
+                if (hasUnread) ...[
                   const SizedBox(height: 5),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -106,7 +133,7 @@ class ChatRoomTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      '$unreadCount',
+                      unreadCount > 99 ? '99+' : '$unreadCount',
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,

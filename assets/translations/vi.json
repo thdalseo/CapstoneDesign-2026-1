@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "Trang chủ",
-    "connect": "Ghép đôi",
     "matching": "Ghép đôi",
     "chat": "Nhắn tin",
     "help": "Hỗ trợ",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "Thiết lập năm học, sở thích và mục đích giao lưu\nđể tìm bạn phù hợp.",
     "go_to_profile": "Thiết lập hồ sơ",
     "no_matches": "Chưa có gợi ý nào",
+    "no_matches_desc": "Hoàn thiện hồ sơ của bạn\nvà chúng tôi sẽ gợi ý bạn bè phù hợp!",
     "next_recommendations": "Xem gợi ý tiếp theo",
     "back_to_top": "Quay lại đầu"
   },
@@ -62,7 +62,25 @@
       "Cuối tuần bạn thường làm gì?",
       "Sở thích của bạn là gì?",
       "Cuộc sống học đường của bạn thế nào?"
-    ]
+    ],
+    "correct_title": "Sửa câu bằng AI",
+    "correct_already_good": "Câu của bạn đã tự nhiên rồi ✓",
+    "correct_original": "Bản gốc",
+    "correct_suggested": "Gợi ý sửa",
+    "correct_send_original": "Gửi bản gốc",
+    "correct_send_corrected": "Gửi bản đã sửa",
+    "correct_error": "Đã xảy ra lỗi khi sửa câu",
+    "session_title": "Phiên giao lưu ngôn ngữ",
+    "session_sent": "Yêu cầu phiên đã gửi",
+    "session_received": "Yêu cầu phiên nhận được",
+    "session_teach": "Ngôn ngữ dạy",
+    "session_learn": "Ngôn ngữ học",
+    "session_duration": "Thời gian phiên",
+    "session_minutes": "Phiên {n} phút",
+    "session_start": "Bắt đầu phiên",
+    "session_same_lang": "Ngôn ngữ dạy và học không thể giống nhau",
+    "session_running": "Phiên đang diễn ra",
+    "session_done": "Hoàn thành"
   },
 
   "help": {
@@ -171,7 +189,44 @@
     "delete_account_title": "Xóa tài khoản",
     "delete_account_desc": "Tất cả dữ liệu sẽ bị xóa vĩnh viễn\nvà không thể khôi phục.",
     "password_hint": "Nhập mật khẩu",
-    "withdraw": "Xóa tài khoản"
+    "withdraw": "Xóa tài khoản",
+    "section_exchange": "Giao lưu ngôn ngữ",
+    "session_history": "Lịch sử phiên",
+    "session_days": "Số ngày phiên tháng này",
+    "session_total_min": "Tổng thời gian tháng này",
+    "session_no_record": "Chưa có bản ghi",
+    "session_no_record_desc": "Hoàn thành phiên giao lưu ngôn ngữ\nvà nó sẽ được ghi lại ở đây!",
+    "session_select_day": "Chọn một ngày để xem bản ghi"
+  },
+
+  "auth": {
+    "signup_title": "Đăng ký",
+    "name": "Họ và tên",
+    "name_hint": "Nhập họ và tên",
+    "name_required": "Vui lòng nhập họ và tên",
+    "college": "Khoa",
+    "college_hint": "Chọn khoa",
+    "college_required": "Vui lòng chọn khoa",
+    "dept": "Chuyên ngành",
+    "dept_hint": "Chọn chuyên ngành",
+    "dept_hint_first": "Chọn khoa trước",
+    "dept_required": "Vui lòng chọn chuyên ngành",
+    "country": "Quốc gia",
+    "country_hint": "Chọn quốc gia",
+    "country_required": "Vui lòng chọn quốc gia",
+    "email": "Email trường",
+    "email_hint": "ID email",
+    "email_required": "Vui lòng nhập email",
+    "password": "Mật khẩu",
+    "password_hint": "Tối thiểu 8 ký tự",
+    "password_required": "Vui lòng nhập mật khẩu",
+    "password_min": "Mật khẩu phải có ít nhất 8 ký tự",
+    "password_confirm": "Xác nhận mật khẩu",
+    "password_confirm_hint": "Nhập lại mật khẩu",
+    "password_confirm_required": "Vui lòng xác nhận mật khẩu",
+    "password_mismatch": "Mật khẩu không khớp",
+    "submit": "Xác minh",
+    "language": "Ngôn ngữ UI"
   },
 
   "weight": {

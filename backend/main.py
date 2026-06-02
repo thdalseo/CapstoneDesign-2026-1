@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import Base, engine
 from app.core.profanity_filter import start_auto_refresh
 from app.models import user as _user_models  # noqa: F401 — 모델 등록
-from app.routers import auth, chat, help_posts, translation
+from app.routers import auth, chat, help_posts, sessions, translation
 
 # 서버 시작 시 모델 기준으로 테이블 자동 생성 (없는 테이블만 생성)
 Base.metadata.create_all(bind=engine)
@@ -35,4 +35,5 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(help_posts.router)
 app.include_router(chat.router)
+app.include_router(sessions.router)
 app.include_router(translation.router)

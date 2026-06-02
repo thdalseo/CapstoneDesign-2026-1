@@ -4,6 +4,7 @@ sqlalchemy
 python-dotenv
 bcrypt
 google-genai
+pyahocorasick
 # Uncomment the next two lines when using MySQL.
 # pymysql
 # cryptography

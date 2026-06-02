@@ -31,14 +31,14 @@ class _HelpCardState extends State<HelpCard> {
   bool _showTranslation = false;
 
   static const Map<String, Color> _categoryColors = {
-    '수업': Color(0xFF4C80AF),
-    '행정': Color(0xFF8B5CF6),
-    '생활': Color(0xFF10B981),
-    '언어': Color(0xFFEF4444),
-    '한국어': Color(0xFFEF4444),
-    '캠퍼스': Color(0xFFF59E0B),
-    '의료': Color(0xFFEC4899),
-    '기타': Color(0xFF6B7280),
+    '수업': AppTheme.primary,        // 파스텔 블루
+    '행정': Color(0xFFA78BFA),        // 파스텔 라벤더
+    '생활': Color(0xFF34D399),       // 파스텔 에메랄드
+    '언어': Color(0xFFFC7171),       // 파스텔 로즈
+    '한국어': Color(0xFFFC7171),
+    '캠퍼스': Color(0xFFFBBF24),     // 파스텔 앰버
+    '의료': Color(0xFFF472B6),       // 파스텔 핑크
+    '기타': Color(0xFF9CA3AF),       // 라이트 그레이
   };
 
   // DB 값(한국어) → 번역 키
@@ -197,8 +197,7 @@ class _HelpCardState extends State<HelpCard> {
                       backgroundColor:
                           AppTheme.primary.withValues(alpha: 0.15),
                       child: Text(
-                        (widget.post['authorName'] as String? ?? '?')
-                            .substring(0, 1),
+                        _initial(widget.post['authorName'] as String? ?? ''),
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppTheme.primary,
@@ -377,6 +376,12 @@ class _HelpCardState extends State<HelpCard> {
     } catch (_) {
       if (mounted) setState(() => _isTranslating = false);
     }
+  }
+
+  /// 이름 첫 글자 (빈 문자열 안전 처리)
+  String _initial(String name) {
+    if (name.isEmpty) return '?';
+    return name[0].toUpperCase();
   }
 
   Widget _badge(String label, Color color) {
