@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // 컬러
-  static const Color primary = Color(0xFF4C80AF);
-  static const Color mint = Color(0xFF3ABBA0);
-  static const Color coral = Color(0xFFFF8E7A);
-  static const Color background = Color(0xFFF5F7FA);
+  static const Color primary = Color.fromARGB(255, 90, 143, 186);
+  static const Color mint = Color.fromARGB(255, 86, 168, 153);
+  static const Color coral = Color.fromARGB(255, 255, 194, 182);
+  static const Color session = Color(0xFFE8F0FE);
+  static const Color sessionAccent = Color(0xFF5A8FBA);
+  static const Color background = Color(0xFFF3F7FB);
   static const Color textPrimary = Color(0xFF1F2937);
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color cardBg = Color(0xFFFFFFFF);
-  static const Color border = Color(0xFFE0E8F0);
+  static const Color border = Color(0xFFDDE8F2);   
 
   static ThemeData get lightTheme => ThemeData(
         useMaterial3: true,

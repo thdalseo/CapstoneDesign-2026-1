@@ -20,11 +20,11 @@ class ChatRoomTile extends StatelessWidget {
     this.lastMessageTime,
   });
 
-  /// __LANG_REQ__ 포맷 및 특수 메시지 처리
+  /// 특수 메시지 포맷 → 읽기 쉬운 미리보기로 변환
   String _formatPreview(BuildContext context) {
     final msg = lastMessage;
     if (msg == null || msg.isEmpty) return 'chat.room_start_hint'.tr();
-    if (msg.startsWith('__LANG_REQ__|')) return '🔤 언어교환 요청';
+    if (msg.startsWith('__LANG_SESSION__|')) return '🌐 언어교환 세션';
     if (msg.startsWith('🤝 함께해요!')) return '🤝 도움 요청에 응했어요';
     return msg;
   }

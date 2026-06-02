@@ -39,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
   // 채팅 관련 상태
   int _unreadCount = 0;           // 읽지 않은 메시지 수 (하단 탭 뱃지)
   Set<String> _chatUserIds = {};  // 채팅방이 있는 유저 ID 집합
+  /// 채팅 탭 활성화 펄스 — 값이 증가할 때마다 ChattingScreen이 즉시 갱신
+  final _chatRefreshPulse = ValueNotifier<int>(0);
 
   /// 현재 그룹에서 보여줄 5명
   List<MatchUser> get _visibleMatches {
@@ -219,7 +221,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     ).then((_) {
-      // 채팅방에서 돌아올 때 unread 수 갱신
+      // 채팅방에서 돌아올 때 채팅 목록 즉시 갱신
+      _chatRefreshPulse.value++;
       _loadChatData();
     });
   }
@@ -227,6 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _chatRefreshPulse.dispose();
     super.dispose();
   }
 
@@ -275,8 +279,11 @@ class _HomeScreenState extends State<HomeScreen> {
         unreadCount: _unreadCount,
         onTap: (i) {
           setState(() => _currentIndex = i);
-          // 채팅 탭 진입 시 unread 수 갱신
-          if (i == 2) _loadChatData();
+          if (i == 2) {
+            // 채팅 탭 활성화 → ChattingScreen 즉시 갱신 펄스
+            _chatRefreshPulse.value++;
+            _loadChatData();
+          }
         },
       ),
     );
@@ -322,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
+            OutlinedButton(
               onPressed: () async {
                 await Navigator.push(
                   context,
@@ -332,20 +339,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
                 _loadUser();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppTheme.primary,
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                elevation: 0,
+                side: const BorderSide(color: AppTheme.primary, width: 1.5),
               ),
               child: Text(
                 'home.go_to_profile'.tr(),
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -355,30 +361,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody() {
-    switch (_currentIndex) {
-      case 0:
-        return _buildHomeTab();
-      case 1:
-        return MatchingScreen(
+    // IndexedStack: 모든 탭 위젯이 항상 살아있음
+    // → ChattingScreen의 폴링 타이머가 어느 탭에서도 끊기지 않음
+    return IndexedStack(
+      index: _currentIndex,
+      children: [
+        _buildHomeTab(),
+        MatchingScreen(
           users: _matchedUsers,
           onToggle: _toggleMatched,
           onStartChat: (user) => _startChat(user),
           chatUserIds: _chatUserIds,
-        );
-      case 2:
-        return ChattingScreen(onUnreadChanged: (count) {
-          if (mounted) setState(() => _unreadCount = count);
-        });
-      case 3:
-        return HelpingScreen(
+        ),
+        ChattingScreen(
+          onUnreadChanged: (count) {
+            if (mounted) setState(() => _unreadCount = count);
+          },
+          refreshPulse: _chatRefreshPulse,
+        ),
+        HelpingScreen(
           onStartChat: (user, systemMessage) =>
               _startChat(user, initialMessage: systemMessage),
-        );
-      case 4:
-        return const MyPageScreen();
-      default:
-        return _buildHomeTab();
-    }
+        ),
+        const MyPageScreen(),
+      ],
+    );
   }
 
   Widget _buildHomeTab() {
@@ -520,118 +527,66 @@ class _HomeScreenState extends State<HomeScreen> {
                       horizontal: 10,
                       vertical: 8,
                     ),
-                    // ── 스와이프 제스처: 우→ 매칭, 좌→ 다음 카드 ─────────────
-                    child: GestureDetector(
-                      onHorizontalDragEnd: (details) {
-                        final dx = details.velocity.pixelsPerSecond.dx;
-                        if (dx > 350) {
-                          // 오른쪽 스와이프 → 매칭 추가
-                          if (!alreadyMatched) {
-                            _toggleMatched(user);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    const Icon(Icons.extension,
-                                        color: Colors.white, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text('${user.name}님을 매칭 목록에 추가했어요!'),
-                                  ],
-                                ),
-                                backgroundColor: AppTheme.primary,
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
-                              ),
-                            );
-                          }
-                        }
-                        // 왼쪽 스와이프 → PageView가 자동으로 다음 카드로 이동
-                      },
-                      child: MatchCard(
+                    child: MatchCard(
                         user: user,
                         isMatched: alreadyMatched,
                         isInChat: _chatUserIds.contains(user.id),
                         onMatchTap: () => _toggleMatched(user),
                       ),
-                    ),
                   ),
                 );
               },
             ),
           ),
 
-          // 페이지 인디케이터 + 다음 추천 버튼
+          // 인디케이터 + 새로고침 버튼
           Padding(
             padding: const EdgeInsets.only(top: 4, bottom: 12),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // 스와이프 힌트
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.swipe_rounded,
-                        size: 13,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.5)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '오른쪽으로 밀면 매칭 추가',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.textSecondary.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-
-                // 인디케이터
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _visibleMatches.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 9 : 7,
-                      height: _currentPage == index ? 9 : 7,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentPage == index
-                            ? AppTheme.primary
-                            : const Color(0xFFD0DCEF),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // 다음 추천 보기 버튼 (5명 초과일 때만)
+                // 새로고침 버튼 (5명 초과 그룹이 있을 때만)
                 if (_matchList.length > 5) ...[
-                  const SizedBox(height: 6),
-                  TextButton.icon(
-                    onPressed: () {
+                  GestureDetector(
+                    onTap: () {
                       setState(() {
                         _groupIndex = (_groupIndex + 1) % _totalGroups;
                         _currentPage = 0;
                       });
                       _pageController.jumpToPage(0);
                     },
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text(
-                      _groupIndex < _totalGroups - 1
-                          ? 'home.next_recommendations'.tr()
-                          : 'home.back_to_top'.tr(),
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppTheme.primary,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      margin: const EdgeInsets.only(right: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.refresh_rounded,
+                        size: 15,
+                        color: AppTheme.primary,
+                      ),
                     ),
                   ),
                 ],
+                // 페이지 인디케이터 점
+                ...List.generate(
+                  _visibleMatches.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentPage == index ? 9 : 7,
+                    height: _currentPage == index ? 9 : 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentPage == index
+                          ? AppTheme.primary
+                          : const Color(0xFFD0DCEF),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

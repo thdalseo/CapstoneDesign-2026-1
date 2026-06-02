@@ -6,14 +6,14 @@ import '../../services/translation_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/avatar_color.dart';
 
-// 관심사 태그에 순서대로 적용할 색상
+// 관심사 태그에 순서대로 적용할 색상 (파스텔 팔레트)
 const _kTagColors = [
-  Color(0xFF4C80AF),
-  Color(0xFF3ABBA0),
-  Color(0xFF8B5CF6),
-  Color(0xFFF59E0B),
-  Color(0xFFEF4444),
-  Color(0xFFEC4899),
+  AppTheme.primary,        // 파스텔 블루
+  AppTheme.mint,           // 파스텔 씨폼
+  Color(0xFFA78BFA),       // 파스텔 라벤더
+  Color(0xFFFBBF24),       // 파스텔 앰버
+  Color(0xFFFC7171),       // 파스텔 로즈
+  Color(0xFFF472B6),       // 파스텔 핑크
 ];
 
 class MatchCard extends StatefulWidget {
@@ -213,43 +213,34 @@ class _Header extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 매칭도 뱃지 + 안내문구 — 탭하면 매칭 이유 바텀시트
+          // 매칭도 뱃지 — 탭하면 매칭 이유 바텀시트
           Align(
             alignment: Alignment.centerRight,
             child: GestureDetector(
               onTap: () => _showReasonSheet(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.mint.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(999),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.mint.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${user.matchPercent}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.mint,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.auto_awesome_rounded,
-                            size: 12, color: AppTheme.mint),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${user.matchPercent}%',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.mint,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.info_outline_rounded,
-                            size: 11, color: AppTheme.mint),
-                      ],
-                    ),
-                  ),
-                ],
+                    const SizedBox(width: 4),
+                    const Icon(Icons.info_outline_rounded,
+                        size: 11, color: AppTheme.mint),
+                  ],
+                ),
               ),
             ),
           ),

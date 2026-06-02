@@ -91,9 +91,6 @@ def get_or_create_room(req: CreateRoomRequest, db: Session = Depends(get_db)):
         .first()
     )
     if not room:
-        for uid in [a, b]:
-            if not db.query(User).filter(User.id == uid).first():
-                raise HTTPException(status_code=404, detail=f"유저 {uid}를 찾을 수 없습니다.")
         room = ChatRoom(user_id_a=a, user_id_b=b)
         db.add(room)
         db.commit()
@@ -115,8 +112,6 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
     for room in rooms:
         other_id = room.user_id_b if room.user_id_a == user_id else room.user_id_a
         other = db.query(User).filter(User.id == other_id).first()
-        if not other:
-            continue
         last_msg = (
             db.query(ChatMessage)
             .filter(ChatMessage.room_id == room.id)
@@ -144,14 +139,14 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
 
         result.append({
             "room_id": room.id,
-            "other_user_id": str(other.id),
-            "other_user_name": other.name,
-            "other_user_country": other.country or "",
-            "other_user_major": other.major or "",
-            "other_user_year": other.year or "",
-            "other_user_interests": [i.interest for i in other.interests],
-            "other_user_languages": [l.language for l in other.languages],
-            "other_user_description": other.description or "",
+            "other_user_id": str(other_id),
+            "other_user_name": other.name if other else f"User {other_id}",
+            "other_user_country": (other.country or "") if other else "",
+            "other_user_major": (other.major or "") if other else "",
+            "other_user_year": (other.year or "") if other else "",
+            "other_user_interests": [i.interest for i in other.interests] if other else [],
+            "other_user_languages": [l.language for l in other.languages] if other else [],
+            "other_user_description": (other.description or "") if other else "",
             "last_message": last_msg.content if last_msg else None,
             "last_message_time": last_msg.created_at.isoformat() if last_msg else None,
             "unread_count": unread_count,
@@ -712,12 +707,25 @@ async def websocket_chat(
                 continue
 
             content = (data.get("content") or "").strip()
-            sender_id = data.get("sender_id")
             if not content:
                 continue
 
-            # 금칙어 검사 — 발신자에게만 에러 응답, 연결은 유지
-            if contains_profanity(content):
+            # sender_id 유효성 검사 — 비어 있거나 정수로 변환 불가능하면 무시
+            raw_sender = data.get("sender_id")
+            try:
+                sender_id_int = int(raw_sender)
+                if sender_id_int <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                await ws.send_json({
+                    "type": "error",
+                    "code": "invalid_sender",
+                    "message": "유효하지 않은 사용자입니다. 다시 로그인해주세요.",
+                })
+                continue
+
+            # 금칙어 검사 — __로 시작하는 시스템/세션 메시지는 제외
+            if not content.startswith('__') and contains_profanity(content):
                 await ws.send_json({
                     "type": "error",
                     "code": "profanity",
@@ -728,7 +736,7 @@ async def websocket_chat(
             # DB 저장
             msg = ChatMessage(
                 room_id=room_id,
-                sender_id=int(sender_id) if sender_id is not None else None,
+                sender_id=sender_id_int,
                 content=content,
                 is_system=False,
             )
