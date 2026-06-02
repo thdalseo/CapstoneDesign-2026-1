@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "ホーム",
-    "connect": "マッチング",
     "matching": "マッチング",
     "chat": "チャット",
     "help": "サポート",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "学年・興味・交流目的を設定すると\n相性のいいお友達が見つかります。",
     "go_to_profile": "プロフィール設定へ",
     "no_matches": "まだおすすめがいません",
+    "no_matches_desc": "プロフィールを完成させると\nおすすめの友達を紹介します！",
     "next_recommendations": "次のおすすめを見る",
     "back_to_top": "最初に戻る"
   },
@@ -62,7 +62,14 @@
       "週末は普段何をしていますか？",
       "趣味は何ですか？",
       "学校生活はどうですか？"
-    ]
+    ],
+    "correct_title": "AI文章校正",
+    "correct_already_good": "すでに自然な文章です ✓",
+    "correct_original": "原文",
+    "correct_suggested": "修正案",
+    "correct_send_original": "原文を送る",
+    "correct_send_corrected": "修正文を送る",
+    "correct_error": "校正中にエラーが発生しました"
   },
 
   "help": {

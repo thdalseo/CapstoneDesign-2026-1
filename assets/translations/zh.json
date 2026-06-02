@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "主页",
-    "connect": "匹配",
     "matching": "匹配",
     "chat": "聊天",
     "help": "帮助",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "设置年级、兴趣和交流目的，\n即可找到与您匹配的朋友。",
     "go_to_profile": "去设置个人资料",
     "no_matches": "暂无推荐好友",
+    "no_matches_desc": "完善您的资料\n我们将为您推荐匹配的朋友！",
     "next_recommendations": "查看更多推荐",
     "back_to_top": "返回顶部"
   },
@@ -62,7 +62,14 @@
       "周末通常做什么？",
       "你有什么兴趣爱好？",
       "你的校园生活怎么样？"
-    ]
+    ],
+    "correct_title": "AI句子纠正",
+    "correct_already_good": "句子已经很自然了 ✓",
+    "correct_original": "原文",
+    "correct_suggested": "修正建议",
+    "correct_send_original": "发送原文",
+    "correct_send_corrected": "发送修正版",
+    "correct_error": "纠正过程中发生错误"
   },
 
   "help": {

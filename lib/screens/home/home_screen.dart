@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/api_client.dart';
 import '../../models/match_user.dart';
 import '../../models/user_model.dart';
 import '../../services/match_service.dart';
@@ -35,6 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<MatchUser> _matchList = [];
   bool _loadingMatches = false;
 
+  // 채팅 관련 상태
+  int _unreadCount = 0;           // 읽지 않은 메시지 수 (하단 탭 뱃지)
+  Set<String> _chatUserIds = {};  // 채팅방이 있는 유저 ID 집합
+
   /// 현재 그룹에서 보여줄 5명
   List<MatchUser> get _visibleMatches {
     final start = _groupIndex * 5;
@@ -58,19 +63,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadUser() async {
-    final user = await UserService.loadUser();
-    if (mounted) {
-      setState(() => _currentUser = user);
-      // 매칭 목록은 프로필 완성 여부와 무관하게 복원 (로그인 유지용)
-      await _loadMatchedUsers();
-      if (user != null && user.isProfileComplete) {
-        await _loadMatches(user.email);
-      }
+    // ── 1단계: 로컬 캐시에서 즉시 로드 (서버 대기 없음) ─────────────────────
+    final localUser = await UserService.loadUser(syncFromServer: false);
+    if (!mounted) return;
+    setState(() => _currentUser = localUser);
+
+    // ── 2단계: 이메일 확보 즉시 매칭 목록 복원 ───────────────────────────────
+    await _loadMatchedUsers();
+
+    // ── 3단계: 서버 동기화 (백엔드가 느리게 켜져도 로컬 데이터는 이미 복원됨) ──
+    final user = await UserService.loadUser(syncFromServer: true);
+    if (!mounted) return;
+    if (user != null) setState(() => _currentUser = user);
+
+    if (user != null && user.isProfileComplete) {
+      await _loadMatches(user.email);
     }
+
+    // ── 4단계: 채팅 데이터 백그라운드 로드 ──────────────────────────────────
+    _loadChatData();
   }
 
   /// SharedPreferences에서 매칭 유저 전체 데이터를 복원
-  /// → _matchList 의존 없이 독립적으로 동작
   Future<void> _loadMatchedUsers() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_matchedKey);
@@ -85,13 +99,12 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         });
       }
-    } catch (_) {
-      // 파싱 실패 시 무시
-    }
+    } catch (_) {}
   }
 
   /// 매칭 유저 전체 데이터를 JSON으로 저장
   Future<void> _saveMatchedUsers() async {
+    if (_currentUser?.email == null || _currentUser!.email.isEmpty) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _matchedKey,
@@ -115,25 +128,51 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// 채팅방 목록을 가져와 unread 수 및 채팅 중인 유저 ID 집합을 업데이트
+  Future<void> _loadChatData() async {
+    try {
+      final user = await UserService.loadUser(syncFromServer: false);
+      final myId = user?.id ?? '';
+      if (myId.isEmpty) return;
+
+      final list = await ApiClient.getList(
+        '/chat/rooms',
+        params: {'user_id': myId},
+      );
+      final rooms = list.cast<Map<String, dynamic>>();
+
+      if (!mounted) return;
+      setState(() {
+        _unreadCount = rooms.fold(
+          0,
+          (sum, r) => sum + ((r['unread_count'] as num?)?.toInt() ?? 0),
+        );
+        _chatUserIds = rooms
+            .map((r) => r['other_user_id']?.toString() ?? '')
+            .where((id) => id.isNotEmpty)
+            .toSet();
+      });
+    } catch (_) {
+      // 채팅 데이터 로드 실패 시 무시 (뱃지만 안 뜸)
+    }
+  }
+
   /// 나와 매칭 상대를 비교해 이유 문구 목록을 생성
   List<String> _computeReasons(MatchUser other) {
     final me = _currentUser;
     if (me == null) return [];
     final reasons = <String>[];
 
-    // 1. 공통 관심사
     final common =
         me.interests.where((i) => other.interests.contains(i)).toList();
     if (common.isNotEmpty) {
       reasons.add('${common.take(2).join(', ')} 관심사가 일치해요');
     }
 
-    // 2. 같은 전공
     if (me.major.isNotEmpty && me.major == other.major) {
       reasons.add('같은 전공이에요 (${me.major})');
     }
 
-    // 3. 교류 목적 / 언어 교류
     final otherIsKorean =
         other.country.contains('대한민국') || other.countryName == '대한민국';
     final myIsKorean = me.countryName == '대한민국';
@@ -144,14 +183,12 @@ class _HomeScreenState extends State<HomeScreen> {
       reasons.add('다양한 문화적 배경을 가지고 있어요');
     }
 
-    // 4. 매칭도 수준
     if (other.matchPercent >= 85) {
       reasons.add('전반적으로 매우 잘 맞는 상대예요 ✨');
     } else if (other.matchPercent >= 70) {
       reasons.add('여러 면에서 잘 맞는 상대예요');
     }
 
-    // 기본 문구 (이유가 없을 때)
     if (reasons.isEmpty) {
       reasons.add('새로운 인연이 될 수 있어요');
     }
@@ -171,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _saveMatchedUsers();
   }
 
-  /// 채팅 시작 — 채팅방으로 이동 (채팅 목록은 서버에서 자동 관리)
+  /// 채팅 시작
   void _startChat(MatchUser user, {String? initialMessage}) {
     Navigator.push(
       context,
@@ -181,7 +218,10 @@ class _HomeScreenState extends State<HomeScreen> {
           initialMessage: initialMessage,
         ),
       ),
-    );
+    ).then((_) {
+      // 채팅방에서 돌아올 때 unread 수 갱신
+      _loadChatData();
+    });
   }
 
   @override
@@ -194,10 +234,50 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      body: SafeArea(child: _buildBody()),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── 오프라인 배너 ────────────────────────────────────────────────
+            ValueListenableBuilder<bool>(
+              valueListenable: ApiClient.isOffline,
+              builder: (_, offline, __) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  height: offline ? 30 : 0,
+                  color: const Color(0xFFEF4444),
+                  child: offline
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.wifi_off_rounded,
+                                size: 13, color: Colors.white),
+                            SizedBox(width: 6),
+                            Text(
+                              '서버에 연결할 수 없어요',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                );
+              },
+            ),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
       bottomNavigationBar: HomeBottomNav(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        unreadCount: _unreadCount,
+        onTap: (i) {
+          setState(() => _currentIndex = i);
+          // 채팅 탭 진입 시 unread 수 갱신
+          if (i == 2) _loadChatData();
+        },
       ),
     );
   }
@@ -283,9 +363,12 @@ class _HomeScreenState extends State<HomeScreen> {
           users: _matchedUsers,
           onToggle: _toggleMatched,
           onStartChat: (user) => _startChat(user),
+          chatUserIds: _chatUserIds,
         );
       case 2:
-        return const ChattingScreen();
+        return ChattingScreen(onUnreadChanged: (count) {
+          if (mounted) setState(() => _unreadCount = count);
+        });
       case 3:
         return HelpingScreen(
           onStartChat: (user, systemMessage) =>
@@ -376,14 +459,36 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.people_outline_rounded,
-                      size: 52, color: AppTheme.textSecondary.withValues(alpha: 0.4)),
-                  const SizedBox(height: 12),
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFFE8F0FE),
+                    ),
+                    child: const Icon(
+                      Icons.people_outline_rounded,
+                      color: AppTheme.primary,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     'home.no_matches'.tr(),
                     style: const TextStyle(
                       fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'home.no_matches_desc'.tr(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
                       color: AppTheme.textSecondary,
+                      height: 1.6,
                     ),
                   ),
                 ],
@@ -398,6 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPageChanged: (i) => setState(() => _currentPage = i),
               itemBuilder: (context, index) {
                 final user = _visibleMatches[index];
+                final alreadyMatched = _matchedUsers.any((u) => u.id == user.id);
                 return AnimatedBuilder(
                   animation: _pageController,
                   builder: (context, child) {
@@ -414,10 +520,41 @@ class _HomeScreenState extends State<HomeScreen> {
                       horizontal: 10,
                       vertical: 8,
                     ),
-                    child: MatchCard(
-                      user: user,
-                      isMatched: _matchedUsers.any((u) => u.id == user.id),
-                      onMatchTap: () => _toggleMatched(user),
+                    // ── 스와이프 제스처: 우→ 매칭, 좌→ 다음 카드 ─────────────
+                    child: GestureDetector(
+                      onHorizontalDragEnd: (details) {
+                        final dx = details.velocity.pixelsPerSecond.dx;
+                        if (dx > 350) {
+                          // 오른쪽 스와이프 → 매칭 추가
+                          if (!alreadyMatched) {
+                            _toggleMatched(user);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(Icons.extension,
+                                        color: Colors.white, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text('${user.name}님을 매칭 목록에 추가했어요!'),
+                                  ],
+                                ),
+                                backgroundColor: AppTheme.primary,
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10)),
+                              ),
+                            );
+                          }
+                        }
+                        // 왼쪽 스와이프 → PageView가 자동으로 다음 카드로 이동
+                      },
+                      child: MatchCard(
+                        user: user,
+                        isMatched: alreadyMatched,
+                        isInChat: _chatUserIds.contains(user.id),
+                        onMatchTap: () => _toggleMatched(user),
+                      ),
                     ),
                   ),
                 );
@@ -430,7 +567,26 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.only(top: 4, bottom: 12),
             child: Column(
               children: [
-                // 인디케이터 (현재 그룹 내 카드 위치)
+                // 스와이프 힌트
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.swipe_rounded,
+                        size: 13,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '오른쪽으로 밀면 매칭 추가',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // 인디케이터
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(

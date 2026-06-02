@@ -8,7 +8,10 @@ import '../../widgets/chatting/chat_room_tile.dart';
 import 'chatting_room_screen.dart';
 
 class ChattingScreen extends StatefulWidget {
-  const ChattingScreen({super.key});
+  /// 읽지 않은 메시지 총합이 변경될 때 호출 (하단 탭 뱃지용)
+  final void Function(int totalUnread)? onUnreadChanged;
+
+  const ChattingScreen({super.key, this.onUnreadChanged});
 
   @override
   State<ChattingScreen> createState() => _ChattingScreenState();
@@ -77,6 +80,8 @@ class _ChattingScreenState extends State<ChattingScreen> {
           _rooms = rooms;
           _loading = false;
         });
+        // 읽지 않은 수 부모에 알림
+        widget.onUnreadChanged?.call(_totalUnread);
       }
     } catch (_) {
       if (mounted) {

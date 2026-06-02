@@ -45,6 +45,7 @@ class _HelpingScreenState extends State<HelpingScreen>
   bool _fabHovered = false;
   int _displayCount = 10;
   bool _isLoading = false;
+  final ScrollController _listScrollController = ScrollController();
 
   UserModel? _currentUser;
   List<Map<String, dynamic>> _allPosts = [];
@@ -64,6 +65,7 @@ class _HelpingScreenState extends State<HelpingScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _listScrollController.dispose();
     super.dispose();
   }
 
@@ -179,6 +181,16 @@ class _HelpingScreenState extends State<HelpingScreen>
       ),
     );
     await _loadPosts();
+    // 새 글 작성 후 목록 최상단으로 자동 스크롤
+    if (initialData == null &&
+        _listScrollController.hasClients &&
+        _listScrollController.position.maxScrollExtent > 0) {
+      _listScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _deletePost(int id) {
@@ -460,6 +472,7 @@ class _HelpingScreenState extends State<HelpingScreen>
                 _buildEmpty()
               else
                 ListView.builder(
+                  controller: _listScrollController,
                   padding: const EdgeInsets.only(top: 4, bottom: 88),
                   itemCount: displayed.length + (hasMore ? 1 : 0),
                   itemBuilder: (context, i) {
@@ -576,8 +589,12 @@ class _HelpingScreenState extends State<HelpingScreen>
           const SizedBox(height: 6),
           Text(
             'help.empty_desc'.tr(),
+            textAlign: TextAlign.center,
             style: const TextStyle(
-                fontSize: 13, color: AppTheme.textSecondary),
+              fontSize: 13,
+              color: AppTheme.textSecondary,
+              height: 1.6,
+            ),
           ),
         ],
       ),

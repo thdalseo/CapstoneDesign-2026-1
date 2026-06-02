@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "Home",
-    "connect": "Match",
     "matching": "Match",
     "chat": "Chat",
     "help": "Help",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "Set your grade, interests, and exchange purpose\nto find friends who match you.",
     "go_to_profile": "Set up profile",
     "no_matches": "No recommendations yet",
+    "no_matches_desc": "Complete your profile\nand we'll suggest friends for you!",
     "next_recommendations": "See next recommendations",
     "back_to_top": "Back to top"
   },
@@ -62,7 +62,14 @@
       "What do you usually do on weekends?",
       "What are your interests?",
       "How is your school life?"
-    ]
+    ],
+    "correct_title": "AI Sentence Correction",
+    "correct_already_good": "Your sentence looks great ✓",
+    "correct_original": "Original",
+    "correct_suggested": "Suggested",
+    "correct_send_original": "Send original",
+    "correct_send_corrected": "Send corrected",
+    "correct_error": "An error occurred during correction"
   },
 
   "help": {

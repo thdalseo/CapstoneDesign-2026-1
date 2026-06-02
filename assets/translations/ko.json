@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "홈",
-    "connect": "매칭",
     "matching": "매칭",
     "chat": "채팅",
     "help": "도움",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "학년, 관심사, 교류 목적을 설정하면\n나와 잘 맞는 친구들을 만날 수 있어요.",
     "go_to_profile": "프로필 설정하러 가기",
     "no_matches": "아직 추천할 친구가 없어요",
+    "no_matches_desc": "프로필을 완성하면\n나와 잘 맞는 친구를 추천해 드릴게요!",
     "next_recommendations": "다음 추천 보기",
     "back_to_top": "처음으로 돌아가기"
   },
@@ -62,7 +62,14 @@
       "주말에 보통 뭐 하세요?",
       "관심사가 뭐예요?",
       "학교 생활은 어때요?"
-    ]
+    ],
+    "correct_title": "AI 문장 교정",
+    "correct_already_good": "이미 자연스러운 문장이에요 ✓",
+    "correct_original": "원문",
+    "correct_suggested": "교정 제안",
+    "correct_send_original": "원문 전송",
+    "correct_send_corrected": "교정본 전송",
+    "correct_error": "교정 중 오류가 발생했어요"
   },
 
   "help": {

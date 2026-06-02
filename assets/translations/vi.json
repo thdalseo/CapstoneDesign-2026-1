@@ -1,7 +1,6 @@
 {
   "nav": {
     "home": "Trang chủ",
-    "connect": "Ghép đôi",
     "matching": "Ghép đôi",
     "chat": "Nhắn tin",
     "help": "Hỗ trợ",
@@ -27,6 +26,7 @@
     "profile_incomplete_desc": "Thiết lập năm học, sở thích và mục đích giao lưu\nđể tìm bạn phù hợp.",
     "go_to_profile": "Thiết lập hồ sơ",
     "no_matches": "Chưa có gợi ý nào",
+    "no_matches_desc": "Hoàn thiện hồ sơ của bạn\nvà chúng tôi sẽ gợi ý bạn bè phù hợp!",
     "next_recommendations": "Xem gợi ý tiếp theo",
     "back_to_top": "Quay lại đầu"
   },
@@ -62,7 +62,14 @@
       "Cuối tuần bạn thường làm gì?",
       "Sở thích của bạn là gì?",
       "Cuộc sống học đường của bạn thế nào?"
-    ]
+    ],
+    "correct_title": "Sửa câu bằng AI",
+    "correct_already_good": "Câu của bạn đã tự nhiên rồi ✓",
+    "correct_original": "Bản gốc",
+    "correct_suggested": "Gợi ý sửa",
+    "correct_send_original": "Gửi bản gốc",
+    "correct_send_corrected": "Gửi bản đã sửa",
+    "correct_error": "Đã xảy ra lỗi khi sửa câu"
   },
 
   "help": {

@@ -9,6 +9,7 @@ import '../../services/chat/chat_service.dart';
 import '../../services/chat/chat_service_factory.dart';
 import '../../services/user_service.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/avatar_color.dart';
 import '../../widgets/chatting/chat_bubble.dart';
 import '../../widgets/chatting/chat_input_bar.dart';
 
@@ -47,6 +48,9 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
   List<String> _suggestions = const [];
   bool _loadingSuggestions = true;
   UserModel? _myUser;
+
+  // AI 문장 교정
+  bool _correcting = false;
 
   @override
   void initState() {
@@ -191,6 +195,226 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
     if (!mounted) return;
     setState(() => _loadingSuggestions = true);
     await _fetchSuggestions();
+  }
+
+  /// ✨ 버튼 — AI 문장 교정 요청 후 바텀시트 표시
+  Future<void> _correctMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _correcting) return;
+
+    setState(() => _correcting = true);
+
+    try {
+      final locale = mounted ? context.locale.languageCode : 'ko';
+      final res = await ApiClient.post('/chat/correct', {
+        'text': text,
+        'locale': locale,
+      });
+
+      if (!mounted) return;
+
+      final isCorrect = res['is_correct'] as bool? ?? true;
+      final corrected = res['corrected'] as String? ?? text;
+      final explanation = res['explanation'] as String? ?? '';
+
+      _showCorrectionSheet(
+        original: text,
+        corrected: corrected,
+        isCorrect: isCorrect,
+        explanation: explanation,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('chat.correct_error'.tr()),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _correcting = false);
+    }
+  }
+
+  void _showCorrectionSheet({
+    required String original,
+    required String corrected,
+    required bool isCorrect,
+    required String explanation,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 드래그 핸들
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 헤더
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome_rounded,
+                    size: 16, color: AppTheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'chat.correct_title'.tr(),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            if (isCorrect) ...[
+              // 이미 자연스러운 경우
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.mint.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.mint.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_outline_rounded,
+                        size: 18, color: AppTheme.mint),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'chat.correct_already_good'.tr(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _sendMessage();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: Text('chat.correct_send_original'.tr(),
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ] else ...[
+              // 교정안 있는 경우 — 원문 / 교정본 비교
+              _CorrectionCard(
+                label: 'chat.correct_original'.tr(),
+                text: original,
+                color: const Color(0xFFFFF3F3),
+                borderColor: const Color(0xFFFFCDD2),
+                textColor: const Color(0xFFB71C1C),
+              ),
+              const SizedBox(height: 10),
+              _CorrectionCard(
+                label: 'chat.correct_suggested'.tr(),
+                text: corrected,
+                color: const Color(0xFFF0F4FF),
+                borderColor: AppTheme.primary.withValues(alpha: 0.3),
+                textColor: AppTheme.primary,
+              ),
+              if (explanation.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  explanation,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  // 원문 전송
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _sendMessage();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textSecondary,
+                        side: BorderSide(color: AppTheme.border),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      child: Text('chat.correct_send_original'.tr(),
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // 교정본 전송
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _controller.text = corrected;
+                        _sendMessage();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      child: Text('chat.correct_send_corrected'.tr(),
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildEmptyWithSuggestions() {
@@ -522,14 +746,19 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
             Container(
               width: 68,
               height: 68,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFFE8F0FE),
+                color: avatarColorFor(user.name).withValues(alpha: 0.15),
               ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: AppTheme.primary,
-                size: 36,
+              child: Center(
+                child: Text(
+                  avatarInitial(user.name),
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: avatarColorFor(user.name),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -686,14 +915,19 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
               Container(
                 width: 36,
                 height: 36,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFFE8F0FE),
+                  color: avatarColorFor(widget.user.name).withValues(alpha: 0.15),
                 ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  color: AppTheme.primary,
-                  size: 20,
+                child: Center(
+                  child: Text(
+                    avatarInitial(widget.user.name),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: avatarColorFor(widget.user.name),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -780,9 +1014,70 @@ class _ChattingRoomScreenState extends State<ChattingRoomScreen> {
                       ),
           ),
           if (!_loadingHistory && _showSuggestions) _buildSuggestionChips(),
+          // 교정 로딩 중 표시
+          if (_correcting)
+            LinearProgressIndicator(
+              minHeight: 2,
+              color: AppTheme.primary,
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+            ),
           ChatInputBar(
             controller: _controller,
             onSend: _sendMessage,
+            onCorrect: _correcting ? null : _correctMessage,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 교정 결과 카드 (원문 / 교정본)
+class _CorrectionCard extends StatelessWidget {
+  final String label;
+  final String text;
+  final Color color;
+  final Color borderColor;
+  final Color textColor;
+
+  const _CorrectionCard({
+    required this.label,
+    required this.text,
+    required this.color,
+    required this.borderColor,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: textColor.withValues(alpha: 0.7),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 14,
+              color: textColor,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
           ),
         ],
       ),

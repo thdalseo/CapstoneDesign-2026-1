@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 /// 개발 환경 서버 주소
@@ -17,19 +19,35 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
+  /// 서버 연결 불가 상태를 전역으로 추적 (오프라인 배너용)
+  static final ValueNotifier<bool> isOffline = ValueNotifier(false);
+
+  static void _onSuccess() {
+    if (isOffline.value) isOffline.value = false;
+  }
+
+  static void _onConnectionError() {
+    if (!isOffline.value) isOffline.value = true;
+  }
+
   static Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? params,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path')
-        .replace(queryParameters: params);
-    final res = await http.get(uri, headers: {'Content-Type': 'application/json'});
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) return decoded;
-
-    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
+    try {
+      final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: params);
+      final res = await http.get(uri, headers: {'Content-Type': 'application/json'});
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return decoded;
+      }
+      final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
+    }
   }
 
   /// GET 요청으로 JSON 배열을 반환하는 엔드포인트용
@@ -37,53 +55,68 @@ class ApiClient {
     String path, {
     Map<String, String>? params,
   }) async {
-    final uri = Uri.parse('$_baseUrl$path')
-        .replace(queryParameters: params);
-    final res = await http.get(uri, headers: {'Content-Type': 'application/json'});
-
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+    try {
+      final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: params);
+      final res = await http.get(uri, headers: {'Content-Type': 'application/json'});
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return jsonDecode(utf8.decode(res.bodyBytes)) as List<dynamic>;
+      }
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes));
+      final detail = (decoded as Map?)?['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
     }
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes));
-    final detail = (decoded as Map?)?['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
   }
 
   static Future<Map<String, dynamic>> patch(
     String path, [
     Map<String, dynamic>? body,
   ]) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final res = await http.patch(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) return decoded;
-
-    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
+    try {
+      final uri = Uri.parse('$_baseUrl$path');
+      final res = await http.patch(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body != null ? jsonEncode(body) : null,
+      );
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return decoded;
+      }
+      final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
+    }
   }
 
   static Future<Map<String, dynamic>> put(
     String path,
     Map<String, dynamic> body,
   ) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final res = await http.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) return decoded;
-
-    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
+    try {
+      final uri = Uri.parse('$_baseUrl$path');
+      final res = await http.put(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return decoded;
+      }
+      final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
+    }
   }
 
   static Future<Map<String, dynamic>> delete(
@@ -91,43 +124,48 @@ class ApiClient {
     Map<String, dynamic>? body,
     Map<String, String>? params,
   ]) async {
-    final uri = Uri.parse('$_baseUrl$path')
-        .replace(queryParameters: params);
-    final res = await http.delete(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: body != null ? jsonEncode(body) : null,
-    );
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return decoded;
+    try {
+      final uri = Uri.parse('$_baseUrl$path').replace(queryParameters: params);
+      final res = await http.delete(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body != null ? jsonEncode(body) : null,
+      );
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return decoded;
+      }
+      final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
     }
-
-    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
   }
 
   static Future<Map<String, dynamic>> post(
     String path,
     Map<String, dynamic> body,
   ) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final res = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-
-    final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return decoded;
+    try {
+      final uri = Uri.parse('$_baseUrl$path');
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      final decoded = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _onSuccess();
+        return decoded;
+      }
+      // FastAPI 에러 응답: {"detail": "..."}
+      final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
+      throw ApiException(res.statusCode, detail);
+    } on SocketException {
+      _onConnectionError();
+      throw const ApiException(0, '네트워크에 연결할 수 없습니다.');
     }
-
-    // FastAPI 에러 응답: {"detail": "..."}
-    final detail = decoded['detail']?.toString() ?? '서버 오류가 발생했습니다.';
-    throw ApiException(res.statusCode, detail);
   }
 }
