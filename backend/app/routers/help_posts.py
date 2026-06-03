@@ -78,7 +78,7 @@ def _post_dict(post: HelpPost) -> dict:
             for helper in post.helpers
             if helper.helper
         ],
-        "createdAt": post.created_at.isoformat() if post.created_at else None,
+        "createdAt": post.created_at.isoformat() + "Z" if post.created_at else None,
     }
 
 

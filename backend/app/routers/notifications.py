@@ -12,7 +12,7 @@ router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
 
 class NotificationCreateRequest(BaseModel):
-    email: str
+    user_id: int
     type: str
     title: str
     body: str
@@ -21,11 +21,11 @@ class NotificationCreateRequest(BaseModel):
 
 
 class NotificationOwnerRequest(BaseModel):
-    email: str
+    user_id: int
 
 
-def _get_user_by_email(db: Session, email: str) -> User:
-    user = db.query(User).filter(User.email == email).first()
+def _get_user(db: Session, user_id: int) -> User:
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     return user
@@ -51,13 +51,13 @@ def _get_owned_notification(
 
 @router.get("")
 def list_notifications(
-    email: str = Query(...),
+    user_id: int = Query(...),
     unread_only: bool = Query(default=False),
     limit: int = Query(default=80, ge=1, le=200),
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, email)
-    query = db.query(AppNotification).filter(AppNotification.user_id == user.id)
+    _get_user(db, user_id)  # 존재 확인
+    query = db.query(AppNotification).filter(AppNotification.user_id == user_id)
     if unread_only:
         query = query.filter(AppNotification.is_read.is_(False))
 
@@ -69,7 +69,7 @@ def list_notifications(
     unread_count = (
         db.query(AppNotification)
         .filter(
-            AppNotification.user_id == user.id,
+            AppNotification.user_id == user_id,
             AppNotification.is_read.is_(False),
         )
         .count()
@@ -85,10 +85,10 @@ def create_user_notification(
     req: NotificationCreateRequest,
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, req.email)
+    _get_user(db, req.user_id)  # 존재 확인
     notification = create_notification(
         db,
-        user_id=user.id,
+        user_id=req.user_id,
         type=req.type,
         title=req.title,
         body=req.body,
@@ -109,8 +109,7 @@ def mark_notification_read(
     req: NotificationOwnerRequest,
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, req.email)
-    notification = _get_owned_notification(db, notification_id, user.id)
+    notification = _get_owned_notification(db, notification_id, req.user_id)
     notification.is_read = True
     db.commit()
     db.refresh(notification)
@@ -122,10 +121,10 @@ def mark_all_notifications_read(
     req: NotificationOwnerRequest,
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, req.email)
+    _get_user(db, req.user_id)
     (
         db.query(AppNotification)
-        .filter(AppNotification.user_id == user.id)
+        .filter(AppNotification.user_id == req.user_id)
         .update({"is_read": True})
     )
     db.commit()
@@ -138,8 +137,7 @@ def delete_notification(
     req: NotificationOwnerRequest,
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, req.email)
-    notification = _get_owned_notification(db, notification_id, user.id)
+    notification = _get_owned_notification(db, notification_id, req.user_id)
     db.delete(notification)
     db.commit()
     return {"message": "Notification deleted."}
@@ -150,7 +148,7 @@ def clear_notifications(
     req: NotificationOwnerRequest,
     db: Session = Depends(get_db),
 ):
-    user = _get_user_by_email(db, req.email)
-    db.query(AppNotification).filter(AppNotification.user_id == user.id).delete()
+    _get_user(db, req.user_id)
+    db.query(AppNotification).filter(AppNotification.user_id == req.user_id).delete()
     db.commit()
     return {"message": "Notifications cleared."}
