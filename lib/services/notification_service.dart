@@ -53,12 +53,12 @@ class NotificationService {
     _syncing = true;
     try {
       final user = await UserService.loadUser(syncFromServer: false);
-      final email = user?.email ?? '';
-      if (email.isEmpty) return;
+      final userId = user?.id ?? '';
+      if (userId.isEmpty) return;
 
       final res = await ApiClient.get(
         '/api/notifications',
-        params: {'email': email},
+        params: {'user_id': userId},
       );
       final serverItems = (res['notifications'] as List<dynamic>? ?? [])
           .whereType<Map<String, dynamic>>()
@@ -166,10 +166,10 @@ class NotificationService {
     final serverId = target?.serverId;
     if (serverId == null) return;
     try {
-      final email = await _currentEmail();
-      if (email.isEmpty) return;
+      final userId = await _currentUserId();
+      if (userId.isEmpty) return;
       await ApiClient.patch('/api/notifications/$serverId/read', {
-        'email': email,
+        'user_id': int.tryParse(userId) ?? 0,
       });
     } catch (_) {}
   }
@@ -182,9 +182,11 @@ class NotificationService {
     await _save();
 
     try {
-      final email = await _currentEmail();
-      if (email.isEmpty) return;
-      await ApiClient.patch('/api/notifications/read-all', {'email': email});
+      final userId = await _currentUserId();
+      if (userId.isEmpty) return;
+      await ApiClient.patch('/api/notifications/read-all', {
+        'user_id': int.tryParse(userId) ?? 0,
+      });
     } catch (_) {}
   }
 
@@ -194,9 +196,11 @@ class NotificationService {
     await _save();
 
     try {
-      final email = await _currentEmail();
-      if (email.isEmpty) return;
-      await ApiClient.delete('/api/notifications', {'email': email});
+      final userId = await _currentUserId();
+      if (userId.isEmpty) return;
+      await ApiClient.delete('/api/notifications', {
+        'user_id': int.tryParse(userId) ?? 0,
+      });
     } catch (_) {}
   }
 
@@ -208,10 +212,10 @@ class NotificationService {
     String? sourceId,
   }) async {
     try {
-      final email = await _currentEmail();
-      if (email.isEmpty) return null;
+      final userId = await _currentUserId();
+      if (userId.isEmpty) return null;
       final res = await ApiClient.post('/api/notifications', {
-        'email': email,
+        'user_id': int.tryParse(userId) ?? 0,
         'type': type,
         'title': title,
         'body': body,
@@ -225,9 +229,9 @@ class NotificationService {
     }
   }
 
-  Future<String> _currentEmail() async {
+  Future<String> _currentUserId() async {
     final user = await UserService.loadUser(syncFromServer: false);
-    return user?.email ?? '';
+    return user?.id ?? '';
   }
 
   List<AppNotification> _merge(

@@ -66,11 +66,13 @@ class MatchedUserTile extends StatelessWidget {
                           color: AppTheme.textPrimary,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        user.country,
-                        style: const TextStyle(fontSize: 14),
-                      ),
+                      if (user.countryFlag.isNotEmpty) ...[
+                        const SizedBox(width: 5),
+                        Text(
+                          user.countryFlag,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
                       // 채팅 중 표시
                       if (isInChat) ...[
                         const SizedBox(width: 6),

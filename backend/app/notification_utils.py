@@ -13,7 +13,7 @@ def notification_dict(notification: AppNotification) -> dict:
         "sourceType": notification.source_type,
         "sourceId": notification.source_id,
         "isRead": notification.is_read,
-        "createdAt": notification.created_at.isoformat()
+        "createdAt": notification.created_at.isoformat() + 'Z'
         if notification.created_at
         else None,
     }

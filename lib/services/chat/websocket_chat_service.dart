@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import '../../core/api_client.dart';
 import '../../models/app_notification.dart';
 import '../../models/chat_message.dart';
+import '../notification_service.dart';
 import 'chat_service.dart';
 
 /// 실제 백엔드(FastAPI WebSocket)와 통신하는 구현체.
@@ -145,7 +146,7 @@ class WebSocketChatService implements ChatService {
         return ChatMessage(
           id: j['id'].toString(),
           content: j['content'] as String,
-          timestamp: DateTime.parse(j['timestamp'] as String),
+          timestamp: DateTime.parse(j['timestamp'] as String).toLocal(),
           isMe: j['sender_id']?.toString() == _userId,
         );
       }).toList();
@@ -173,15 +174,19 @@ class WebSocketChatService implements ChatService {
 
       if (type == 'message') {
         final notificationJson = data['notification'];
+        AppNotification? notification;
+        if (notificationJson is Map<String, dynamic>) {
+          notification = AppNotification.fromJson(notificationJson);
+          // 실시간으로 NotificationService에 반영
+          NotificationService.instance.upsert(notification);
+        }
         _msgCtrl.add(
           ChatMessage(
             id: data['id'].toString(),
             content: data['content'] as String,
-            timestamp: DateTime.parse(data['timestamp'] as String),
+            timestamp: DateTime.parse(data['timestamp'] as String).toLocal(),
             isMe: false,
-            notification: notificationJson is Map<String, dynamic>
-                ? AppNotification.fromJson(notificationJson)
-                : null,
+            notification: notification,
           ),
         );
       } else if (type == 'read') {

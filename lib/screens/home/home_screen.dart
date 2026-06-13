@@ -314,6 +314,48 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// room_id로 채팅방 직접 열기 (알림 탭 시 사용)
+  Future<void> _openChatRoomById(int roomId) async {
+    try {
+      final myId = _currentUser?.id ?? '';
+      final list = await ApiClient.getList(
+        '/chat/rooms',
+        params: {'user_id': myId},
+      );
+      final json = (list.cast<Map<String, dynamic>>())
+          .firstWhere((r) => (r['room_id'] as num?)?.toInt() == roomId,
+              orElse: () => {});
+      if (json.isEmpty || !mounted) return;
+
+      final user = MatchUser(
+        id: json['other_user_id'] as String? ?? '',
+        name: json['other_user_name'] as String? ?? '',
+        country: json['other_user_country'] as String? ?? '',
+        major: json['other_user_major'] as String? ?? '',
+        year: json['other_user_year'] as String? ?? '',
+        interests: (json['other_user_interests'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        languages: (json['other_user_languages'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        description: json['other_user_description'] as String? ?? '',
+        matchPercent: 0,
+      );
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChattingRoomScreen(user: user, roomId: roomId),
+        ),
+      );
+      _chatRefreshPulse.value++;
+      _loadChatData();
+    } catch (_) {}
+  }
+
   /// 채팅 시작
   void _startChat(MatchUser user, {String? initialMessage}) {
     final userId = int.tryParse(user.id);
@@ -553,7 +595,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const NotificationScreen(),
+                          builder: (_) => NotificationScreen(
+                      onChatRoomTap: _openChatRoomById,
+                    ),
                         ),
                       );
                     },

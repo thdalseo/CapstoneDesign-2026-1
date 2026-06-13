@@ -265,7 +265,9 @@ class _ChatBubbleState extends State<ChatBubble> {
             ],
           ),
           child: Text(
-            widget.message.content,
+            widget.message.content.startsWith('__SYS__|')
+                ? widget.message.content.substring('__SYS__|'.length)
+                : widget.message.content,
             style: TextStyle(
               fontSize: 14,
               color: isMe ? Colors.white : AppTheme.textPrimary,

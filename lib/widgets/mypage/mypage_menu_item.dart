@@ -30,7 +30,7 @@ class MyPageMenuItem extends StatelessWidget {
               icon,
               size: 20,
               color: isDestructive
-                  ? Colors.red.shade400
+                  ? const Color(0xFFBBBBBB)
                   : AppTheme.textSecondary,
             ),
             const SizedBox(width: 14),
@@ -39,7 +39,7 @@ class MyPageMenuItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 color: isDestructive
-                    ? Colors.red.shade400
+                    ? const Color(0xFFBBBBBB)
                     : AppTheme.textPrimary,
               ),
             ),
