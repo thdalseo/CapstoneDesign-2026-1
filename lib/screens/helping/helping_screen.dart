@@ -271,7 +271,7 @@ class _HelpingScreenState extends State<HelpingScreen>
                 } catch (_) {}
               }
 
-              final systemMessage = '🤝 함께해요!\n'
+              final systemMessage = '__SYS__|🤝 함께해요!\n'
                   '📌 카테고리: ${post['category']}\n'
                   '📝 제목: ${post['title']}\n'
                   '📍 장소: ${post['place']}\n'
