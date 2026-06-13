@@ -6,7 +6,10 @@ import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
+  /// 채팅 알림 탭 시 호출 — room_id 전달
+  final Future<void> Function(int roomId)? onChatRoomTap;
+
+  const NotificationScreen({super.key, this.onChatRoomTap});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -109,7 +112,18 @@ class _NotificationScreenState extends State<NotificationScreen> {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => _service.markAsRead(notification.id),
+          onTap: () async {
+              await _service.markAsRead(notification.id);
+              if (notification.type == AppNotificationType.chat &&
+                  notification.sourceType == 'chat_room' &&
+                  notification.sourceId != null) {
+                final roomId = int.tryParse(notification.sourceId!);
+                if (roomId != null && widget.onChatRoomTap != null) {
+                  if (context.mounted) Navigator.pop(context);
+                  await widget.onChatRoomTap!(roomId);
+                }
+              }
+            },
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(

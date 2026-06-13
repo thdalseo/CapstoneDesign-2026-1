@@ -36,7 +36,7 @@ def _post_dict(post: LanguageExchangePost) -> dict:
         "target_language": post.target_language,
         "memo": post.memo or "",
         "is_active": post.is_active,
-        "created_at": post.created_at.isoformat() if post.created_at else None,
+        "created_at": post.created_at.isoformat() + "Z" if post.created_at else None,
     }
 
 

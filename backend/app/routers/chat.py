@@ -19,6 +19,28 @@ from app.notification_utils import create_notification, notification_dict
 router = APIRouter(tags=["chat"])
 
 
+def _readable_content(content: str) -> str:
+    """특수 포맷 메시지를 사람이 읽을 수 있는 텍스트로 변환."""
+    if content.startswith('__LANG_SESSION__|'):
+        parts = content.split('|')
+        teach = next((p.split(':', 1)[1] for p in parts if p.startswith('teach:')), '')
+        learn = next((p.split(':', 1)[1] for p in parts if p.startswith('learn:')), '')
+        minutes = next((p.split(':', 1)[1] for p in parts if p.startswith('minutes:')), '')
+        return f'언어교환 세션 요청 ({teach} ↔ {learn}, {minutes}분)'
+    if content.startswith('__LANG_REQ__|'):
+        parts = content.split('|')
+        native = next((p.split(':', 1)[1] for p in parts if p.startswith('native:')), '')
+        target = next((p.split(':', 1)[1] for p in parts if p.startswith('target:')), '')
+        return f'언어교환 요청 ({native} → {target})'
+    if content == '__SESSION_STOP__':
+        return '세션이 종료되었습니다.'
+    if content.startswith('__SESSION_START__|'):
+        return '세션이 시작되었습니다.'
+    if content.startswith('__SYS__|'):
+        return content[len('__SYS__|'):]
+    return content
+
+
 # ── WebSocket 연결 관리 ───────────────────────────────────────────────────────
 
 class _ConnectionManager:
@@ -148,8 +170,8 @@ def get_user_rooms(user_id: int, db: Session = Depends(get_db)):
             "other_user_interests": [i.interest for i in other.interests] if other else [],
             "other_user_languages": [l.language for l in other.languages] if other else [],
             "other_user_description": (other.description or "") if other else "",
-            "last_message": last_msg.content if last_msg else None,
-            "last_message_time": last_msg.created_at.isoformat() if last_msg else None,
+            "last_message": _readable_content(last_msg.content) if last_msg else None,
+            "last_message_time": last_msg.created_at.isoformat() + "Z" if last_msg else None,
             "unread_count": unread_count,
         })
     return result
@@ -185,7 +207,7 @@ def mark_room_read(
     payload = {
         "type": "read",
         "user_id": req.user_id,
-        "read_at": now.isoformat(),
+        "read_at": now.isoformat() + "Z",
     }
     background_tasks.add_task(_broadcast_background, room_id, payload)
 
@@ -210,7 +232,7 @@ def get_read_status(room_id: int, user_id: int, db: Session = Depends(get_db)):
         .first()
     )
     return {
-        "other_last_read_at": other_read.last_read_at.isoformat() if other_read else None
+        "other_last_read_at": other_read.last_read_at.isoformat() + "Z" if other_read else None
     }
 
 
@@ -242,7 +264,7 @@ def get_messages(room_id: int, limit: int = 50, db: Session = Depends(get_db)):
             "id": m.id,
             "sender_id": m.sender_id,
             "content": m.content,
-            "timestamp": m.created_at.isoformat(),
+            "timestamp": m.created_at.isoformat() + "Z",
             "is_system": m.is_system,
         }
         for m in msgs
@@ -764,7 +786,7 @@ async def websocket_chat(
                         user_id=receiver_id,
                         type="chat",
                         title="새 채팅 메시지",
-                        body=f"{sender.name}: {content}",
+                        body=f"{sender.name}: {_readable_content(content)}",
                         source_type="chat_room",
                         source_id=str(room_id),
                         dedupe_key=f"chat:{msg.id}:{receiver_id}",
@@ -783,7 +805,7 @@ async def websocket_chat(
                 "id": msg.id,
                 "sender_id": msg.sender_id,
                 "content": msg.content,
-                "timestamp": msg.created_at.isoformat(),
+                "timestamp": msg.created_at.isoformat() + "Z",
                 "is_system": False,
             }
             if notification_payload:
